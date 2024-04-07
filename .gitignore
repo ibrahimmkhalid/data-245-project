@@ -8,5 +8,4 @@ data/**
 .todo
 **.sync.py
 probe_known_attacks.arff
-probe_known_attacks.csv
-probe_known_attacks_small.csv
+**.csv

@@ -6,6 +6,5 @@ data/**
 .nvim.lua
 .project_env
 .todo
-**.sync.py
 probe_known_attacks.arff
 **.csv

@@ -1,4 +1,6 @@
 data/**
+!data/make_data.sh
+!data/download_data.sh
 !data/download.py
 !data/combined.csv
 !/data/merge_datasets.py

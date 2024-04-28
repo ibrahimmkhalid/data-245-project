@@ -223,22 +223,6 @@ plt.show()
 # - at n=10 of the selected features, we have 95% of the variance explained
 
 # %%
-df_corr_gt1 = pd.DataFrame(df[cols_corr_gt1])
-df_corr_gt1["class"] = df["class"]
-df_corr_gt1.head()
-
-# %%
-df_corr_gt1 = df_corr_gt1.to_numpy()
-
-# %%
-X_corr_gt1_train, X_corr_gt1_test, y_corr_gt1_train, y_corr_gt1_test = train_test_split(
-    df_corr_gt1[:, :-1],
-    df_corr_gt1[:, -1],
-    test_size=0.2,
-    random_state=random_state,
-)
-
-# %%
 model_params = {
         "C": np.logspace(-3, 4, 8),
         "kernel": ["linear", "poly", "rbf", "sigmoid"],
@@ -252,24 +236,7 @@ cv = 3
 n_jobs = -1
 
 # %%
-model_corr_gt1 = GridSearchCV(SVC(), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_corr_gt1.fit(X_corr_gt1_train, y_corr_gt1_train)
-
-# %%
-model_corr_gt1.best_params_
-
-# %%
-benchmarkAndUpdateResult(
-    X_corr_gt1_test,
-    y_corr_gt1_test,
-    model_corr_gt1,
-    f"SVM {model_corr_gt1.best_params_}",
-    "Known attacks",
-    "|correlation| > 0.1 features unscaled",
-)
-
-# %%
-df_corr_gt1_scaled = df_corr_gt1[:, :-1]
+df_corr_gt1_scaled = df[cols_corr_gt1]
 df_corr_gt1_scaler = StandardScaler()
 df_corr_gt1_scaled = df_corr_gt1_scaler.fit_transform(df_corr_gt1_scaled)
 df_corr_gt1_scaled = pd.DataFrame(
@@ -309,40 +276,6 @@ benchmarkAndUpdateResult(
     f"SVM {model_corr_gt1_scaled.best_params_}",
     "Known attacks",
     "|correlation| > 0.1 features scaled",
-)
-
-
-# %%
-df_full = pd.DataFrame(df.drop(columns=["class"]))
-df_full["class"] = df["class"]
-df_full.head()
-
-# %%
-df_full = df_full.to_numpy()
-
-# %%
-X_full_train, X_full_test, y_full_train, y_full_test = train_test_split(
-    df_full[:, :-1],
-    df_full[:, -1],
-    test_size=0.2,
-    random_state=random_state,
-)
-
-# %%
-model_full = GridSearchCV(SVC(), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_full.fit(X_full_train, y_full_train)
-
-# %%
-model_full.best_params_
-
-# %%
-benchmarkAndUpdateResult(
-    X_full_test,
-    y_full_test,
-    model_full,
-    f"SVM {model_full.best_params_}",
-    "Known attacks",
-    "All features unscaled",
 )
 
 

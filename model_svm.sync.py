@@ -18,10 +18,13 @@ import time
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 pd.set_option("display.width", 10000)
+pd.set_option("display.max_rows", 500)
+pd.set_option("display.max_columns", 500)
+pd.set_option("display.max_colwidth", None)
 
-TESTING = True
-TESTING_SIZE = 0.001
-BENCMARK_ITER_N = 1
+TESTING = False
+TESTING_SIZE = 0.01
+BENCMARK_ITER_N = 10
 random_state = 245
 
 benchmark_results = pd.DataFrame(
@@ -225,7 +228,8 @@ plt.show()
 # %%
 model_params = {
         "C": np.logspace(-3, 4, 8),
-        "kernel": ["linear", "poly", "rbf", "sigmoid"],
+        # "kernel": ["linear", "poly", "rbf", "sigmoid"],
+        "kernel": ["poly", "rbf", "sigmoid"],
         "gamma": ["scale", "auto"],
         }
 model_params
@@ -236,11 +240,11 @@ cv = 3
 n_jobs = -1
 
 # %%
-df_corr_gt1_scaled = df[cols_corr_gt1]
+df_corr_gt1_scaled = df[cols_corr_gt1[:-1]]
 df_corr_gt1_scaler = StandardScaler()
 df_corr_gt1_scaled = df_corr_gt1_scaler.fit_transform(df_corr_gt1_scaled)
 df_corr_gt1_scaled = pd.DataFrame(
-    df_corr_gt1_scaled, columns=cols_corr_gt1
+    df_corr_gt1_scaled, columns=cols_corr_gt1[:-1]
 )
 df_corr_gt1_scaled["class"] = df["class"]
 df_corr_gt1_scaled.head()
@@ -397,17 +401,17 @@ df_similar_attacks = pd.read_csv(similar_attacks_path, low_memory=False)
 
 # %%
 df_similar_attacks = df_similar_attacks.drop(columns=["ip_RF", "ip_MF", "ip_offset"])
-df_similar_attacks["class"] = df_similar_attacks["class"].replace(
+df_similar_attacks_class = df_similar_attacks["class"].replace(
     {"normal": 0, "attack": 1}
 )
-df_similar_attacks = pd.DataFrame(df_similar_attacks[cols_corr_gt1])
+df_similar_attacks = df_similar_attacks[cols_corr_gt1[:-1]]
 df_similar_attacks_scaled = df_corr_gt1_scaler.transform(
-    df_similar_attacks.drop(columns="class")
+    df_similar_attacks
 )
 df_similar_attacks_scaled = pd.DataFrame(
-    df_similar_attacks_scaled, columns=df_similar_attacks.drop(columns="class").columns
+    df_similar_attacks_scaled, columns=df_similar_attacks.columns
 )
-df_similar_attacks_scaled["class"] = df_similar_attacks["class"]
+df_similar_attacks_scaled["class"] = df_similar_attacks_class
 df_similar_attacks_scaled.head()
 
 # %%
@@ -432,15 +436,15 @@ df_new_attacks = pd.read_csv(new_attacks_path, low_memory=False)
 
 # %%
 df_new_attacks = df_new_attacks.drop(columns=["ip_RF", "ip_MF", "ip_offset"])
-df_new_attacks["class"] = df_new_attacks["class"].replace({"normal": 0, "attack": 1})
-df_new_attacks = pd.DataFrame(df_new_attacks[cols_corr_gt1])
+df_new_attacks_class = df_new_attacks["class"].replace({"normal": 0, "attack": 1})
+df_new_attacks = df_new_attacks[cols_corr_gt1[:-1]]
 df_new_attacks_scaled = df_corr_gt1_scaler.transform(
-    df_new_attacks.drop(columns="class")
+    df_new_attacks
 )
 df_new_attacks_scaled = pd.DataFrame(
-    df_new_attacks_scaled, columns=df_new_attacks.drop(columns="class").columns
+    df_new_attacks_scaled, columns=df_new_attacks.columns
 )
-df_new_attacks_scaled["class"] = df_new_attacks["class"]
+df_new_attacks_scaled["class"] = df_new_attacks_class
 df_new_attacks_scaled.head()
 
 # %%

@@ -17,22 +17,25 @@ import pandas as pd
 import numpy as np
 import time
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+pd.set_option('display.width', 10000)
 
 BENCMARK_ITER_N = 1
 
 benchmark_results = pd.DataFrame(
     columns=[
-        "model",
+        "Model",
+        "Dataset",
+        "Info",
         "Data size",
-        "accuracy",
-        "precision",
-        "recall",
-        "f1",
-        "time per data per iter",
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "F1",
+        "Time per data per iter",
     ]
 )
 
-def benchmarkAndUpdateResult(X_test, y_test, model, model_name):
+def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, info=""):
     """
     Benchmark the model and update the results dataframe
 
@@ -42,6 +45,8 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name):
     y_test : The actual test labels
     model : The model to be benchmarked, must have the predict method
     model_name : The name of the model
+    dataset_name : The name of the dataset
+    info : Additional information about the model
     """
     global benchmark_results
     data_size = np.shape(X_test)[0]
@@ -59,6 +64,8 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name):
     time_per_data_per_iter = (end - start) / data_size / iter_n
     benchmark_results.loc[len(benchmark_results)] = [
         model_name,
+        dataset_name,
+        info,
         data_size,
         accuracy,
         precision,
@@ -66,7 +73,13 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name):
         f1,
         time_per_data_per_iter,
     ]
-    print(f"{model_name} benchmark done")
+    print(f"Model: {model_name}")
+    print(f"Data size: {data_size}")
+    print(f"Accuracy: {accuracy}")
+    print(f"Precision: {precision}")
+    print(f"Recall: {recall}")
+    print(f"F1: {f1}")
+    print(f"Time per data per iter: {time_per_data_per_iter}")
 
 
 # %%
@@ -90,7 +103,7 @@ model = SVC()
 model.fit(X_train, y_train)
 
 ### Add the following line when you are confident in the model you developed
-benchmarkAndUpdateResult(X_test, y_test, model, "SVM")
+benchmarkAndUpdateResult(X_test, y_test, model, "SVM", "iris (only 2 classes)", "Demonstration of benchmarking")
 
 # %%
 display(benchmark_results)

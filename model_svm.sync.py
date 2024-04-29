@@ -7,12 +7,6 @@ except:
     IN_COLAB = False
 
 # %%
-if IN_COLAB:
-    # !git clone https://github.com/rapidsai/rapidsai-csp-utils.git
-    # !python rapidsai-csp-utils/colab/pip-install.py
-    pass
-
-# %%
 import pandas as pd
 import numpy as np
 import time
@@ -59,8 +53,6 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, in
     global benchmark_results
     data_size = np.shape(X_test)[0]
     y_pred = model.predict(X_test)
-    if IN_COLAB:
-        y_pred = y_pred.get()
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
@@ -94,16 +86,11 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, in
 
 # %%
 # sample binary classification, replace wiht the actual code for the project
-if IN_COLAB:
-    from cuml.svm import SVC
-    import cudf
-    %load_ext cudf.pandas
-else:
-    from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.svm import SVC
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV

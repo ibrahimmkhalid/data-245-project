@@ -9,4 +9,3 @@ data/**
 .project_env
 .todo
 probe_known_attacks.arff
-**.csv

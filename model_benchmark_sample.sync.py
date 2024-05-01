@@ -19,7 +19,7 @@ import time
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 pd.set_option('display.width', 10000)
 
-BENCMARK_ITER_N = 1
+BENCMARK_ITER_N = 1000
 
 benchmark_results = pd.DataFrame(
     columns=[
@@ -58,10 +58,9 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, in
     iter_n = BENCMARK_ITER_N
     start = time.time()
     for _ in range(iter_n):  # benchmark
-        for j in range(data_size):  # simulating real time data
-            model.predict(X_test[j : j + 1])
+        model.predict(X_test)
     end = time.time()
-    time_per_data_per_iter = (end - start) / data_size / iter_n
+    time_per_data_per_iter = (end - start) / iter_n
     benchmark_results.loc[len(benchmark_results)] = [
         model_name,
         dataset_name,

@@ -195,17 +195,16 @@ plt.xticks(range(0, len(df.columns) - 1, 2))
 plt.show()
 
 # %% [markdown]
-# - at n=21, we have 85% of the variance explained
-# - at n=24, we have 90% of the variance explained
 # - at n=27, we have 95% of the variance explained
 
 # %%
 X_gt1 = df[cols_corr_gt1]
+X_gt1 = X_gt1.drop(columns=["class"])
 
 scaler_gt1 = StandardScaler()
 X_gt1_scaled = scaler_gt1.fit_transform(X_gt1)
 
-pca_corr_gt1 = PCA(n_components=len(cols_corr_gt1))
+pca_corr_gt1 = PCA(n_components=len(cols_corr_gt1) - 1)
 X_gt1_pca = pca_corr_gt1.fit_transform(X_gt1_scaled)
 
 pca_cumsum = pca_corr_gt1.explained_variance_ratio_.cumsum()
@@ -216,7 +215,7 @@ plt.title(
     "Cumulative explained variance vs Number of components with |correlation| > 0.1"
 )
 plt.grid()
-plt.xticks(range(0, len(cols_corr_gt1), 2))
+plt.xticks(range(0, len(cols_corr_gt1) - 1, 2))
 plt.show()
 
 # %% [markdown]
@@ -245,9 +244,9 @@ model_params = {
 }
 
 # %%
-verbose = 0
+verbose = 3
 cv = 3
-n_jobs = -1
+n_jobs = None
 
 # %%
 def pipeline_corr_gt1_scaled(**kwargs):
@@ -258,14 +257,18 @@ def pipeline_corr_gt1_scaled(**kwargs):
     cols = kwargs["cols"]
 
     df_ = df[cols]
+    df_ = df_.drop(columns=["class"])
     df_ = scaler.transform(df_)
-    df_ = pd.DataFrame(df_, columns=cols)
+    df_ = pd.DataFrame(df_, columns=cols[:-1])
     df_["class"] = df["class"]
     return df_
 
 
 # %%
 df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_gt1, cols=cols_corr_gt1)
+df_corr_gt1_scaled.head()
+
+# %%
 (
     X_corr_gt1_scaled_train,
     X_corr_gt1_scaled_val,
@@ -317,6 +320,78 @@ benchmarkAndUpdateResult(
         pipeline_corr_gt1_scaled,
         scaler=scaler_gt1,
         cols=cols_corr_gt1
+        )
+# %%
+benchmark_results
+
+# %%
+def pipeline_scaled(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs:
+        raise ValueError("df, scaler, and cols must be passed as keyword arguments for pipeline_corr_gt1_scaled")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+
+    df_ = df.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pd.DataFrame(df_, columns=df.columns[:-1])
+    df_["class"] = df["class"]
+    return df_
+
+
+# %%
+df_scaled = pipeline_scaled(df=df, scaler=scaler, cols=cols_corr_gt1)
+df_scaled.head()
+
+# %%
+(
+    X_scaled_train,
+    X_scaled_val,
+    X_scaled_test,
+    y_scaled_train,
+    y_scaled_val,
+    y_scaled_test,
+) = test_train_val_split(df_scaled)
+
+# %%
+model_scaled_baseline = SVC(random_state=random_state)
+model_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_val, model_scaled_baseline.predict(X_scaled_val)))
+
+# %%
+model_scaled_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+model_scaled_grid.fit(X_scaled_val, y_scaled_val)
+
+# %%
+print(model_scaled_grid.best_params_)
+
+# %%
+model_scaled = SVC(**model_scaled_grid.best_params_, random_state=random_state)
+model_scaled.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_test, model_scaled.predict(X_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        model_scaled,
+        f"SVM {model_scaled_grid.best_params_}",
+        "Similar attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
+        )
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        model_scaled,
+        f"SVM {model_scaled_grid.best_params_}",
+        "New attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
         )
 # %%
 benchmark_results

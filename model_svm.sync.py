@@ -233,6 +233,13 @@ df_new_attacks = pd.read_csv(new_attacks_path, low_memory=False)
 df_new_attacks = df_new_attacks.drop(columns=["ip_RF", "ip_MF", "ip_offset"])
 df_new_attacks["class"] = df_new_attacks["class"].replace({"normal": 0, "attack": 1})
 
+# %%
+if TESTING:
+    df_similar_attacks = df_similar_attacks.sample(frac=0.01, random_state=random_state)
+    df_similar_attacks.reset_index(drop=True, inplace=True)
+    df_new_attacks = df_new_attacks.sample(frac=0.01, random_state=random_state)
+    df_new_attacks.reset_index(drop=True, inplace=True)
+
 # %% [markdown]
 # ## SVM
 
@@ -247,6 +254,20 @@ model_params = {
 verbose = 3
 cv = 3
 n_jobs = None
+
+
+# %%
+def pipeline_scaled(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs:
+        raise ValueError("df and scaler must be passed as keyword arguments for pipeline_scaled")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+
+    df_ = df.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pd.DataFrame(df_, columns=df.columns[:-1])
+    df_["class"] = df["class"]
+    return df_
 
 # %%
 def pipeline_corr_gt1_scaled(**kwargs):
@@ -263,6 +284,103 @@ def pipeline_corr_gt1_scaled(**kwargs):
     df_["class"] = df["class"]
     return df_
 
+# %%
+def pipeline_pca(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs or "pca" not in kwargs:
+        raise ValueError("df, scaler, and pca must be passed as keyword arguments for pipeline_pca")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+    pca = kwargs["pca"]
+
+    df_ = df.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pca.transform(df_)
+    df_ = df_[:, :27]
+    df_ = pd.DataFrame(df_)
+    df_["class"] = df["class"]
+    return df_
+
+# %%
+def pipeline_corr_gt1_pca(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs or "cols" not in kwargs or "pca" not in kwargs:
+        raise ValueError("df, scaler, cols, and pca must be passed as keyword arguments for pipeline_corr_gt1_pca")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+    cols = kwargs["cols"]
+    pca = kwargs["pca"]
+
+    df_ = df[cols]
+    df_ = df_.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pca.transform(df_)
+    df_ = df_[:, :10]
+    df_ = pd.DataFrame(df_)
+    df_["class"] = df["class"]
+    return df_
+
+# %% [markdown]
+# ### All features scaled
+
+# %%
+df_scaled = pipeline_scaled(df=df, scaler=scaler)
+df_scaled.head()
+
+# %%
+(
+    X_scaled_train,
+    X_scaled_val,
+    X_scaled_test,
+    y_scaled_train,
+    y_scaled_val,
+    y_scaled_test,
+) = test_train_val_split(df_scaled)
+
+# %%
+model_scaled_baseline = SVC(random_state=random_state)
+model_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_val, model_scaled_baseline.predict(X_scaled_val)))
+
+# %%
+model_scaled_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+model_scaled_grid.fit(X_scaled_val, y_scaled_val)
+
+# %%
+print(model_scaled_grid.best_params_)
+
+# %%
+model_scaled = SVC(**model_scaled_grid.best_params_, random_state=random_state)
+model_scaled.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_test, model_scaled.predict(X_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        model_scaled,
+        f"SVM {model_scaled_grid.best_params_}",
+        "Similar attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
+        )
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        model_scaled,
+        f"SVM {model_scaled_grid.best_params_}",
+        "New attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
+        )
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### Features with |correlation| > 0.1 scaled
 
 # %%
 df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_gt1, cols=cols_corr_gt1)
@@ -324,96 +442,71 @@ benchmarkAndUpdateResult(
 # %%
 benchmark_results
 
-# %%
-def pipeline_scaled(**kwargs):
-    if "df" not in kwargs or "scaler" not in kwargs:
-        raise ValueError("df and scaler must be passed as keyword arguments for pipeline_scaled")
-    df = kwargs["df"]
-    scaler = kwargs["scaler"]
-
-    df_ = df.drop(columns=["class"])
-    df_ = scaler.transform(df_)
-    df_ = pd.DataFrame(df_, columns=df.columns[:-1])
-    df_["class"] = df["class"]
-    return df_
-
+# %% [markdown]
+# ### All features with 95% PCA
 
 # %%
-df_scaled = pipeline_scaled(df=df, scaler=scaler)
-df_scaled.head()
+df_pca = pipeline_pca(df=df, scaler=scaler, pca=pca)
+df_pca.head()
 
 # %%
 (
-    X_scaled_train,
-    X_scaled_val,
-    X_scaled_test,
-    y_scaled_train,
-    y_scaled_val,
-    y_scaled_test,
-) = test_train_val_split(df_scaled)
+    X_pca_train,
+    X_pca_val,
+    X_pca_test,
+    y_pca_train,
+    y_pca_val,
+    y_pca_test,
+) = test_train_val_split(df_pca)
 
 # %%
-model_scaled_baseline = SVC(random_state=random_state)
-model_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+model_pca_baseline = SVC(random_state=random_state)
+model_pca_baseline.fit(X_pca_train, y_pca_train)
 
 # %%
-print(classification_report(y_scaled_val, model_scaled_baseline.predict(X_scaled_val)))
+print(classification_report(y_pca_val, model_pca_baseline.predict(X_pca_val)))
 
 # %%
-model_scaled_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_scaled_grid.fit(X_scaled_val, y_scaled_val)
+model_pca_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+model_pca_grid.fit(X_pca_val, y_pca_val)
 
 # %%
-print(model_scaled_grid.best_params_)
+print(model_pca_grid.best_params_)
 
 # %%
-model_scaled = SVC(**model_scaled_grid.best_params_, random_state=random_state)
-model_scaled.fit(X_scaled_train, y_scaled_train)
+model_pca = SVC(**model_pca_grid.best_params_, random_state=random_state)
+model_pca.fit(X_pca_train, y_pca_train)
 
 # %%
-print(classification_report(y_scaled_test, model_scaled.predict(X_scaled_test)))
+print(classification_report(y_pca_test, model_pca.predict(X_pca_test)))
 
 # %%
 benchmarkAndUpdateResult(
         df_similar_attacks,
-        model_scaled,
-        f"SVM {model_scaled_grid.best_params_}",
+        model_pca,
+        f"SVM {model_pca_grid.best_params_}",
         "Similar attacks",
-        "All features scaled",
-        pipeline_scaled,
-        scaler=scaler
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler,
+        pca=pca
         )
 # %%
 benchmarkAndUpdateResult(
         df_new_attacks,
-        model_scaled,
-        f"SVM {model_scaled_grid.best_params_}",
+        model_pca,
+        f"SVM {model_pca_grid.best_params_}",
         "New attacks",
-        "All features scaled",
-        pipeline_scaled,
-        scaler=scaler
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler,
+        pca=pca
         )
 # %%
 benchmark_results
 
-# %%
-def pipeline_corr_gt1_pca(**kwargs):
-    if "df" not in kwargs or "scaler" not in kwargs or "cols" not in kwargs or "pca" not in kwargs:
-        raise ValueError("df, scaler, cols, and pca must be passed as keyword arguments for pipeline_corr_gt1_pca")
-    df = kwargs["df"]
-    scaler = kwargs["scaler"]
-    cols = kwargs["cols"]
-    pca = kwargs["pca"]
-
-    df_ = df[cols]
-    df_ = df_.drop(columns=["class"])
-    df_ = scaler.transform(df_)
-    df_ = pca.transform(df_)
-    df_ = df_[:, :10]
-    df_ = pd.DataFrame(df_)
-    df_["class"] = df["class"]
-    return df_
-
+# %% [markdown]
+# ### Features with |correlation| > 0.1 with 95% PCA
 
 # %%
 df_corr_gt1_pca = pipeline_corr_gt1_pca(df=df, scaler=scaler_gt1, cols=cols_corr_gt1, pca=pca_corr_gt1)
@@ -476,82 +569,3 @@ benchmarkAndUpdateResult(
         )
 # %%
 benchmark_results
-
-
-# %%
-def pipeline_pca(**kwargs):
-    if "df" not in kwargs or "scaler" not in kwargs or "pca" not in kwargs:
-        raise ValueError("df, scaler, and pca must be passed as keyword arguments for pipeline_pca")
-    df = kwargs["df"]
-    scaler = kwargs["scaler"]
-    pca = kwargs["pca"]
-
-    df_ = df.drop(columns=["class"])
-    df_ = scaler.transform(df_)
-    df_ = pca.transform(df_)
-    df_ = df_[:, :27]
-    df_ = pd.DataFrame(df_)
-    df_["class"] = df["class"]
-    return df_
-
-
-# %%
-df_pca = pipeline_pca(df=df, scaler=scaler, pca=pca)
-df_pca.head()
-
-# %%
-(
-    X_pca_train,
-    X_pca_val,
-    X_pca_test,
-    y_pca_train,
-    y_pca_val,
-    y_pca_test,
-) = test_train_val_split(df_pca)
-
-# %%
-model_pca_baseline = SVC(random_state=random_state)
-model_pca_baseline.fit(X_pca_train, y_pca_train)
-
-# %%
-print(classification_report(y_pca_val, model_pca_baseline.predict(X_pca_val)))
-
-# %%
-model_pca_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_pca_grid.fit(X_pca_val, y_pca_val)
-
-# %%
-print(model_pca_grid.best_params_)
-
-# %%
-model_pca = SVC(**model_pca_grid.best_params_, random_state=random_state)
-model_pca.fit(X_pca_train, y_pca_train)
-
-# %%
-print(classification_report(y_pca_test, model_pca.predict(X_pca_test)))
-
-# %%
-benchmarkAndUpdateResult(
-        df_similar_attacks,
-        model_pca,
-        f"SVM {model_pca_grid.best_params_}",
-        "Similar attacks",
-        "All features with 95% PCA",
-        pipeline_pca,
-        scaler=scaler,
-        pca=pca
-        )
-# %%
-benchmarkAndUpdateResult(
-        df_new_attacks,
-        model_pca,
-        f"SVM {model_pca_grid.best_params_}",
-        "New attacks",
-        "All features with 95% PCA",
-        pipeline_pca,
-        scaler=scaler,
-        pca=pca
-        )
-# %%
-benchmark_results
-

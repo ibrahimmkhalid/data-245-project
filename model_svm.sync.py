@@ -226,6 +226,12 @@ plt.show()
 # # Modelling
 
 # %%
+_, _, __X__, _, _, __y__ = test_train_val_split(df)
+df_known_attacks = pd.DataFrame(__X__)
+df_known_attacks["class"] = __y__
+df_known_attacks.reset_index(drop=True, inplace=True)
+
+# %%
 df_similar_attacks = pd.read_csv(similar_attacks_path, low_memory=False)
 df_similar_attacks = df_similar_attacks.drop(columns=["ip_RF", "ip_MF", "ip_offset"])
 df_similar_attacks["class"] = df_similar_attacks["class"].replace({"normal": 0, "attack": 1})
@@ -360,6 +366,17 @@ print(classification_report(y_scaled_test, svm_scaled.predict(X_scaled_test)))
 
 # %%
 benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_scaled,
+        f"SVM {svm_scaled_grid.best_params_}",
+        "Known attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
+        )
+
+# %%
+benchmarkAndUpdateResult(
         df_similar_attacks,
         svm_scaled,
         f"SVM {svm_scaled_grid.best_params_}",
@@ -418,6 +435,18 @@ svm_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 
 # %%
 print(classification_report(y_corr_gt1_scaled_test, svm_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_corr_gt1_scaled,
+        f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1
+        )
 
 # %%
 benchmarkAndUpdateResult(
@@ -484,6 +513,18 @@ print(classification_report(y_pca_test, svm_pca.predict(X_pca_test)))
 
 # %%
 benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_pca,
+        f"SVM {svm_pca_grid.best_params_}",
+        "Known attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler,
+        pca=pca
+        )
+
+# %%
+benchmarkAndUpdateResult(
         df_similar_attacks,
         svm_pca,
         f"SVM {svm_pca_grid.best_params_}",
@@ -544,6 +585,19 @@ svm_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 
 # %%
 print(classification_report(y_corr_gt1_pca_test, svm_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_corr_gt1_pca,
+        f"SVM {svm_corr_gt1_pca_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1
+        )
 
 # %%
 benchmarkAndUpdateResult(

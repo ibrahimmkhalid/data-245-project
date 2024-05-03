@@ -395,3 +395,85 @@ benchmarkAndUpdateResult(
         )
 # %%
 benchmark_results
+
+# %%
+def pipeline_corr_gt1_pca(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs or "cols" not in kwargs or "pca" not in kwargs:
+        raise ValueError("df, scaler, cols, and pca must be passed as keyword arguments for pipeline_corr_gt1_pca")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+    cols = kwargs["cols"]
+    pca = kwargs["pca"]
+
+    df_ = df[cols]
+    df_ = df_.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pca.transform(df_)
+    df_ = df_[:, :10]
+    df_ = pd.DataFrame(df_)
+    df_["class"] = df["class"]
+    return df_
+
+
+# %%
+df_corr_gt1_pca = pipeline_corr_gt1_pca(df=df, scaler=scaler_gt1, cols=cols_corr_gt1, pca=pca_corr_gt1)
+df_corr_gt1_pca.head()
+
+# %%
+(
+    X_corr_gt1_pca_train,
+    X_corr_gt1_pca_val,
+    X_corr_gt1_pca_test,
+    y_corr_gt1_pca_train,
+    y_corr_gt1_pca_val,
+    y_corr_gt1_pca_test,
+) = test_train_val_split(df_corr_gt1_pca)
+
+# %%
+model_corr_gt1_pca_baseline = SVC(random_state=random_state)
+model_corr_gt1_pca_baseline.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_val, model_corr_gt1_pca_baseline.predict(X_corr_gt1_pca_val)))
+
+# %%
+model_corr_gt1_pca_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+model_corr_gt1_pca_grid.fit(X_corr_gt1_pca_val, y_corr_gt1_pca_val)
+
+# %%
+print(model_corr_gt1_pca_grid.best_params_)
+
+# %%
+model_corr_gt1_pca = SVC(**model_corr_gt1_pca_grid.best_params_, random_state=random_state)
+model_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_test, model_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        model_corr_gt1_pca,
+        f"SVM {model_corr_gt1_pca_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1
+        )
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        model_corr_gt1_pca,
+        f"SVM {model_corr_gt1_pca_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1
+        )
+# %%
+benchmark_results
+

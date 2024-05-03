@@ -8,10 +8,18 @@ except:
 
 # %%
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, precision_score, recall_score, f1_score
 import time
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
+# %%
 pd.set_option("display.width", 10000)
 pd.set_option("display.max_rows", 500)
 pd.set_option("display.max_columns", 500)
@@ -37,32 +45,24 @@ benchmark_results = pd.DataFrame(
 )
 
 
-def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, info=""):
-    """
-    Benchmark the model and update the results dataframe
-
-    Parameters
-    ----------
-    X_test : The test data
-    y_test : The actual test labels
-    model : The model to be benchmarked, must have the predict method
-    model_name : The name of the model
-    dataset_name : The name of the dataset
-    info : Additional information about the model
-    """
+def benchmarkAndUpdateResult(df, model, model_name, dataset_name, info, pipeline_fn, **pipeline_kwargs):
     global benchmark_results
-    data_size = np.shape(X_test)[0]
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+    df_ = pipeline_fn(df=df, **pipeline_kwargs)
+    X = df_[df_.columns[:-1]]
+    y = df_[df_.columns[-1]]
+    data_size = np.shape(X)[0]
+    y_pred = model.predict(X)
+    accuracy = accuracy_score(y, y_pred)
+    precision = precision_score(y, y_pred)
+    recall = recall_score(y, y_pred)
+    f1 = f1_score(y, y_pred)
     iter_n = BENCMARK_ITER_N
-    start = time.time()
+    start = time.perf_counter_ns()
     for _ in range(iter_n):  # benchmark
-        for j in range(data_size):  # simulating real time data
-            model.predict(X_test[j : j + 1])
-    end = time.time()
+        df_ = pipeline_fn(df=df, **pipeline_kwargs)
+        X = df_[df_.columns[:-1]]
+        model.predict(X)
+    end = time.perf_counter_ns()
     time_per_data_per_iter = (end - start) / data_size / iter_n
     benchmark_results.loc[len(benchmark_results)] = [
         model_name,
@@ -75,6 +75,8 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, in
         f1,
         time_per_data_per_iter,
     ]
+    print(classification_report(y, y_pred))
+    print()
     print(f"Model: {model_name}")
     print(f"Data size: {data_size}")
     print(f"Accuracy: {accuracy}")
@@ -85,19 +87,21 @@ def benchmarkAndUpdateResult(X_test, y_test, model, model_name, dataset_name, in
 
 
 # %%
-# sample binary classification, replace wiht the actual code for the project
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.svm import SVC
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV
+def test_train_val_split(df, random_state=random_state):
+    X_train, X_tmp, y_train, y_tmp = train_test_split(
+        df.iloc[:, :-1], df.iloc[:, -1], test_size=0.3, random_state=random_state
+    )
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_tmp, y_tmp, test_size=0.5, random_state=random_state
+    )
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
 
 # %%
 if IN_COLAB:
-    prepend_path = "/content/drive/MyDrive/Syncable/sjsu/data-245/DATA 245 Project Files/data"
+    prepend_path = (
+        "/content/drive/MyDrive/Syncable/sjsu/data-245/DATA 245 Project Files/data"
+    )
 else:
     prepend_path = "./data"
 known_attacks_path = f"{prepend_path}/probe_known_attacks_small.csv"
@@ -188,17 +192,16 @@ plt.xticks(range(0, len(df.columns) - 1, 2))
 plt.show()
 
 # %% [markdown]
-# - at n=21, we have 85% of the variance explained
-# - at n=24, we have 90% of the variance explained
 # - at n=27, we have 95% of the variance explained
 
 # %%
 X_gt1 = df[cols_corr_gt1]
+X_gt1 = X_gt1.drop(columns=["class"])
 
 scaler_gt1 = StandardScaler()
 X_gt1_scaled = scaler_gt1.fit_transform(X_gt1)
 
-pca_corr_gt1 = PCA(n_components=len(cols_corr_gt1))
+pca_corr_gt1 = PCA(n_components=len(cols_corr_gt1) - 1)
 X_gt1_pca = pca_corr_gt1.fit_transform(X_gt1_scaled)
 
 pca_cumsum = pca_corr_gt1.explained_variance_ratio_.cumsum()
@@ -209,419 +212,412 @@ plt.title(
     "Cumulative explained variance vs Number of components with |correlation| > 0.1"
 )
 plt.grid()
-plt.xticks(range(0, len(cols_corr_gt1), 2))
+plt.xticks(range(0, len(cols_corr_gt1) - 1, 2))
 plt.show()
 
 # %% [markdown]
 # - at n=10 of the selected features, we have 95% of the variance explained
 
-# %%
-model_params = {
-    "C": np.logspace(-3, 4, 8),
-    "kernel": ["poly", "rbf", "sigmoid"],
-    "gamma": ["scale", "auto"],
-}
-model_params
-
-# %%
-verbose = 0
-cv = 3
-n_jobs = -1
-
-# %%
-df_corr_gt1_scaled = df[cols_corr_gt1[:-1]]
-df_corr_gt1_scaler = StandardScaler()
-df_corr_gt1_scaled = df_corr_gt1_scaler.fit_transform(df_corr_gt1_scaled)
-df_corr_gt1_scaled = pd.DataFrame(df_corr_gt1_scaled, columns=cols_corr_gt1[:-1])
-df_corr_gt1_scaled["class"] = df["class"]
-df_corr_gt1_scaled.head()
-
-# %%
-df_corr_gt1_scaled = df_corr_gt1_scaled.to_numpy()
-
-# %%
-(
-    X_corr_gt1_scaled_train,
-    X_corr_gt1_scaled_test,
-    y_corr_gt1_scaled_train,
-    y_corr_gt1_scaled_test,
-) = train_test_split(
-    df_corr_gt1_scaled[:, :-1],
-    df_corr_gt1_scaled[:, -1],
-    test_size=0.2,
-    random_state=random_state,
-)
-
-# %%
-model_corr_gt1_scaled = GridSearchCV(
-    SVC(), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose
-)
-model_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
-
-# %%
-model_corr_gt1_scaled.best_params_
-
-# %%
-model_corr_gt1_scaled_name = f"SVM {model_corr_gt1_scaled.best_params_}"
-model_corr_gt1_scaled = SVC(**model_corr_gt1_scaled.best_params_)
-
-# %%
-model_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
-
-# %%
-benchmarkAndUpdateResult(
-    X_corr_gt1_scaled_test,
-    y_corr_gt1_scaled_test,
-    model_corr_gt1_scaled,
-    model_corr_gt1_scaled_name,
-    "Known attacks",
-    "|correlation| > 0.1 features scaled",
-)
-
-
-# %%
-df_full_scaled = df.drop(columns=["class"])
-df_full_scaler = StandardScaler()
-df_full_scaled = df_full_scaler.fit_transform(df_full_scaled)
-df_full_scaled = pd.DataFrame(df_full_scaled, columns=df.drop(columns="class").columns)
-df_full_scaled["class"] = df["class"]
-df_full_scaled.head()
-
-# %%
-df_full_scaled = df_full_scaled.to_numpy()
-
-# %%
-X_full_scaled_train, X_full_scaled_test, y_full_scaled_train, y_full_scaled_test = (
-    train_test_split(
-        df_full_scaled[:, :-1],
-        df_full_scaled[:, -1],
-        test_size=0.2,
-        random_state=random_state,
-    )
-)
-
-# %%
-model_full_scaled = GridSearchCV(
-    SVC(), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose
-)
-model_full_scaled.fit(X_full_scaled_train, y_full_scaled_train)
-
-# %%
-model_full_scaled.best_params_
-
-# %%
-model_full_scaled_name = f"SVM {model_full_scaled.best_params_}"
-model_full_scaled = SVC(**model_full_scaled.best_params_)
-
-# %%
-model_full_scaled.fit(X_full_scaled_train, y_full_scaled_train)
-
-# %%
-benchmarkAndUpdateResult(
-    X_full_scaled_test,
-    y_full_scaled_test,
-    model_full_scaled,
-    model_full_scaled_name,
-    "Known attacks",
-    "All features scaled",
-)
-
-# %%
-df_full_pca_95 = pd.DataFrame(X_pca[:, :27])
-df_full_pca_95["class"] = df["class"]
-df_full_pca_95.head()
-
-# %%
-df_full_pca_95 = df_full_pca_95.to_numpy()
-
-# %%
-X_full_pca_train, X_full_pca_test, y_full_pca_train, y_full_pca_test = train_test_split(
-    df_full_pca_95[:, :-1],
-    df_full_pca_95[:, -1],
-    test_size=0.2,
-    random_state=random_state,
-)
-
-# %%
-model_full_pca = GridSearchCV(
-    SVC(), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose
-)
-model_full_pca.fit(X_full_pca_train, y_full_pca_train)
-
-# %%
-model_full_pca.best_params_
-
-# %%
-model_full_pca_name = f"SVM {model_full_pca.best_params_}"
-model_full_pca = SVC(**model_full_pca.best_params_)
-
-# %%
-model_full_pca.fit(X_full_pca_train, y_full_pca_train)
-
-# %%
-benchmarkAndUpdateResult(
-    X_full_pca_test,
-    y_full_pca_test,
-    model_full_pca,
-    model_full_pca_name,
-    "Known attacks",
-    "PCA 95% on all features",
-)
-
-# %%
-df_corr_gt1_pca_95 = pd.DataFrame(X_gt1_pca[:, :10])
-df_corr_gt1_pca_95["class"] = df["class"]
-df_corr_gt1_pca_95.head()
-
-# %%
-df_corr_gt1_pca_95 = df_corr_gt1_pca_95.to_numpy()
-
-# %%
-X_corr_gt1_pca_train, X_corr_gt1_pca_test, y_corr_gt1_pca_train, y_corr_gt1_pca_test = (
-    train_test_split(
-        df_corr_gt1_pca_95[:, :-1],
-        df_corr_gt1_pca_95[:, -1],
-        test_size=0.2,
-        random_state=random_state,
-    )
-)
-
-# %%
-model_corr_gt1_pca = GridSearchCV(
-    SVC(), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose
-)
-model_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
-
-# %%
-model_corr_gt1_pca.best_params_
-
-# %%
-model_corr_gt1_pca_name = f"SVM {model_corr_gt1_pca.best_params_}"
-model_corr_gt1_pca = SVC(**model_corr_gt1_pca.best_params_)
-
-# %%
-model_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
-
-# %%
-benchmarkAndUpdateResult(
-    X_corr_gt1_pca_test,
-    y_corr_gt1_pca_test,
-    model_corr_gt1_pca,
-    model_corr_gt1_pca_name,
-    "Known attacks",
-    "PCA 95% on features with |correlation| > 0.1",
-)
-
-# %%
-benchmark_results
-
 # %% [markdown]
-# - Best model in terms of accuracy and time:
-#   - SVM (C=10, gamma='scale', kernel='rbf')
-#   - PCA 95% on features with |correlation| > 0.1
-# - Testing this model on the similar attacks dataset
+# # Modelling
+
+# %%
+_, _, __X__, _, _, __y__ = test_train_val_split(df)
+df_known_attacks = pd.DataFrame(__X__)
+df_known_attacks["class"] = __y__
+df_known_attacks.reset_index(drop=True, inplace=True)
 
 # %%
 df_similar_attacks = pd.read_csv(similar_attacks_path, low_memory=False)
 df_similar_attacks = df_similar_attacks.drop(columns=["ip_RF", "ip_MF", "ip_offset"])
-df_similar_attacks["class"] = df_similar_attacks["class"].replace(
-    {"normal": 0, "attack": 1}
-)
+df_similar_attacks["class"] = df_similar_attacks["class"].replace({"normal": 0, "attack": 1})
 
-# %%
-df_similar_attacks_scaled = scaler.transform(df_similar_attacks.drop(columns=["class"]))
-df_similar_attacks_scaled = pd.DataFrame(
-    df_similar_attacks_scaled, columns=df_similar_attacks.columns[:-1]
-)
-df_similar_attacks_scaled["class"] = df_similar_attacks["class"]
-df_similar_attacks_scaled.head()
-
-# %%
-df_similar_attacks_pca_95 = df_similar_attacks.drop(columns=["class"])
-df_similar_attacks_pca_95 = scaler.transform(df_similar_attacks_pca_95)
-df_similar_attacks_pca_95 = pca.transform(df_similar_attacks_pca_95)
-df_similar_attacks_pca_95 = pd.DataFrame(df_similar_attacks_pca_95[:, :27])
-df_similar_attacks_pca_95["class"] = df_similar_attacks["class"]
-df_similar_attacks_pca_95.head()
-
-# %%
-df_similar_attacks_corr_gt1_scaled = df_similar_attacks.drop(columns=["class"])
-df_similar_attacks_corr_gt1_scaled = scaler.fit_transform(
-    df_similar_attacks_corr_gt1_scaled
-)
-df_similar_attacks_corr_gt1_scaled = pd.DataFrame(
-    df_similar_attacks_corr_gt1_scaled, columns=df_similar_attacks.columns[:-1]
-)
-df_similar_attacks_corr_gt1_scaled["class"] = df_similar_attacks["class"]
-df_similar_attacks_corr_gt1_scaled = df_similar_attacks_corr_gt1_scaled[cols_corr_gt1]
-df_similar_attacks_corr_gt1_scaled.head()
-
-# %%
-df_similar_attacks_corr_gt1_pca_95 = df_similar_attacks[cols_corr_gt1]
-df_similar_attacks_corr_gt1_pca_95 = scaler_gt1.transform(
-    df_similar_attacks_corr_gt1_pca_95
-)
-df_similar_attacks_corr_gt1_pca_95 = pca_corr_gt1.transform(df_similar_attacks_corr_gt1_pca_95)
-df_similar_attacks_corr_gt1_pca_95 = pd.DataFrame(df_similar_attacks_corr_gt1_pca_95[:, :10])
-df_similar_attacks_corr_gt1_pca_95["class"] = df_similar_attacks["class"]
-df_similar_attacks_corr_gt1_pca_95.head()
-
-# %%
-X_similar_attacks_scaled = df_similar_attacks_scaled.drop(columns=["class"]).to_numpy()
-y_similar_attacks_scaled = df_similar_attacks_scaled["class"].to_numpy()
-
-X_similar_attacks_pca_95 = df_similar_attacks_pca_95.drop(columns=["class"]).to_numpy()
-y_similar_attacks_pca_95 = df_similar_attacks_pca_95["class"].to_numpy()
-
-X_similar_attacks_corr_gt1_scaled = df_similar_attacks_corr_gt1_scaled.drop(columns=["class"]).to_numpy()
-y_similar_attacks_corr_gt1_scaled = df_similar_attacks_corr_gt1_scaled["class"].to_numpy()
-
-X_similar_attacks_corr_gt1_pca_95 = df_similar_attacks_corr_gt1_pca_95.drop(columns=["class"]).to_numpy()
-y_similar_attacks_corr_gt1_pca_95 = df_similar_attacks_corr_gt1_pca_95["class"].to_numpy()
-
-# %%
-benchmarkAndUpdateResult(
-    X_similar_attacks_scaled,
-    y_similar_attacks_scaled,
-    model_full_scaled,
-    model_full_scaled_name,
-    "Similar attacks",
-    "All features scaled",
-)
-
-# %%
-benchmarkAndUpdateResult(
-        X_similar_attacks_pca_95,
-        y_similar_attacks_pca_95,
-        model_full_pca,
-        model_full_pca_name,
-        "Similar attacks",
-        "PCA 95% on all features",
-        )
-
-# %%
-benchmarkAndUpdateResult(
-    X_similar_attacks_corr_gt1_scaled,
-    y_similar_attacks_corr_gt1_scaled,
-    model_corr_gt1_scaled,
-    model_corr_gt1_scaled_name,
-    "Similar attacks",
-    "|correlation| > 0.1 features scaled",
-)
-
-# %%
-benchmarkAndUpdateResult(
-    X_similar_attacks_corr_gt1_pca_95,
-    y_similar_attacks_corr_gt1_pca_95,
-    model_corr_gt1_pca,
-    model_corr_gt1_pca_name,
-    "Similar attacks",
-    "PCA 95% on features with |correlation| > 0.1",
-)
-
-# %%
-benchmark_results
-
-# %%
 df_new_attacks = pd.read_csv(new_attacks_path, low_memory=False)
 df_new_attacks = df_new_attacks.drop(columns=["ip_RF", "ip_MF", "ip_offset"])
-df_new_attacks["class"] = df_new_attacks["class"].replace(
-    {"normal": 0, "attack": 1}
-)
+df_new_attacks["class"] = df_new_attacks["class"].replace({"normal": 0, "attack": 1})
 
 # %%
-df_new_attacks_scaled = scaler.transform(df_new_attacks.drop(columns=["class"]))
-df_new_attacks_scaled = pd.DataFrame(
-    df_new_attacks_scaled, columns=df_new_attacks.columns[:-1]
-)
-df_new_attacks_scaled["class"] = df_new_attacks["class"]
-df_new_attacks_scaled.head()
+if TESTING:
+    df_similar_attacks = df_similar_attacks.sample(frac=TESTING_SIZE, random_state=random_state)
+    df_similar_attacks.reset_index(drop=True, inplace=True)
+    df_new_attacks = df_new_attacks.sample(frac=TESTING_SIZE, random_state=random_state)
+    df_new_attacks.reset_index(drop=True, inplace=True)
 
 # %%
-df_new_attacks_pca_95 = df_new_attacks.drop(columns=["class"])
-df_new_attacks_pca_95 = scaler.transform(df_new_attacks_pca_95)
-df_new_attacks_pca_95 = pca.transform(df_new_attacks_pca_95)
-df_new_attacks_pca_95 = pd.DataFrame(df_new_attacks_pca_95[:, :27])
-df_new_attacks_pca_95["class"] = df_new_attacks["class"]
-df_new_attacks_pca_95.head()
+def pipeline_scaled(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs:
+        raise ValueError("df and scaler must be passed as keyword arguments for pipeline_scaled")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+
+    df_ = df.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pd.DataFrame(df_, columns=df.columns[:-1])
+    df_["class"] = df["class"]
+    return df_
 
 # %%
-df_new_attacks_corr_gt1_scaled = df_new_attacks.drop(columns=["class"])
-df_new_attacks_corr_gt1_scaled = scaler.fit_transform(
-    df_new_attacks_corr_gt1_scaled
-)
-df_new_attacks_corr_gt1_scaled = pd.DataFrame(
-    df_new_attacks_corr_gt1_scaled, columns=df_new_attacks.columns[:-1]
-)
-df_new_attacks_corr_gt1_scaled["class"] = df_new_attacks["class"]
-df_new_attacks_corr_gt1_scaled = df_new_attacks_corr_gt1_scaled[cols_corr_gt1]
-df_new_attacks_corr_gt1_scaled.head()
+def pipeline_corr_gt1_scaled(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs or "cols" not in kwargs:
+        raise ValueError("df, scaler, and cols must be passed as keyword arguments for pipeline_corr_gt1_scaled")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+    cols = kwargs["cols"]
+
+    df_ = df[cols]
+    df_ = df_.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pd.DataFrame(df_, columns=cols[:-1])
+    df_["class"] = df["class"]
+    return df_
 
 # %%
-df_new_attacks_corr_gt1_pca_95 = df_new_attacks[cols_corr_gt1]
-df_new_attacks_corr_gt1_pca_95 = scaler_gt1.transform(
-    df_new_attacks_corr_gt1_pca_95
-)
-df_new_attacks_corr_gt1_pca_95 = pca_corr_gt1.transform(df_new_attacks_corr_gt1_pca_95)
-df_new_attacks_corr_gt1_pca_95 = pd.DataFrame(df_new_attacks_corr_gt1_pca_95[:, :10])
-df_new_attacks_corr_gt1_pca_95["class"] = df_new_attacks["class"]
-df_new_attacks_corr_gt1_pca_95.head()
+def pipeline_pca(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs or "pca" not in kwargs:
+        raise ValueError("df, scaler, and pca must be passed as keyword arguments for pipeline_pca")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+    pca = kwargs["pca"]
+
+    df_ = df.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pca.transform(df_)
+    df_ = df_[:, :27]
+    df_ = pd.DataFrame(df_)
+    df_["class"] = df["class"]
+    return df_
 
 # %%
-X_new_attacks_scaled = df_new_attacks_scaled.drop(columns=["class"]).to_numpy()
-y_new_attacks_scaled = df_new_attacks_scaled["class"].to_numpy()
+def pipeline_corr_gt1_pca(**kwargs):
+    if "df" not in kwargs or "scaler" not in kwargs or "cols" not in kwargs or "pca" not in kwargs:
+        raise ValueError("df, scaler, cols, and pca must be passed as keyword arguments for pipeline_corr_gt1_pca")
+    df = kwargs["df"]
+    scaler = kwargs["scaler"]
+    cols = kwargs["cols"]
+    pca = kwargs["pca"]
 
-X_new_attacks_pca_95 = df_new_attacks_pca_95.drop(columns=["class"]).to_numpy()
-y_new_attacks_pca_95 = df_new_attacks_pca_95["class"].to_numpy()
+    df_ = df[cols]
+    df_ = df_.drop(columns=["class"])
+    df_ = scaler.transform(df_)
+    df_ = pca.transform(df_)
+    df_ = df_[:, :10]
+    df_ = pd.DataFrame(df_)
+    df_["class"] = df["class"]
+    return df_
 
-X_new_attacks_corr_gt1_scaled = df_new_attacks_corr_gt1_scaled.drop(columns=["class"]).to_numpy()
-y_new_attacks_corr_gt1_scaled = df_new_attacks_corr_gt1_scaled["class"].to_numpy()
 
-X_new_attacks_corr_gt1_pca_95 = df_new_attacks_corr_gt1_pca_95.drop(columns=["class"]).to_numpy()
-y_new_attacks_corr_gt1_pca_95 = df_new_attacks_corr_gt1_pca_95["class"].to_numpy()
+# %% [markdown]
+# ## SVM
+
+# %%
+svm_params = {
+    "C": [0.01, 0.1, 1, 10, 100, 1000],
+    "kernel": ["poly", "rbf", "sigmoid", "linear"],
+    "gamma": ["scale", "auto"],
+}
+
+# %%
+verbose = 3
+cv = 3
+n_jobs = None
+
+
+# %% [markdown]
+# ### All features scaled
+
+# %%
+df_scaled = pipeline_scaled(df=df, scaler=scaler)
+df_scaled.head()
+
+# %%
+(
+    X_scaled_train,
+    X_scaled_val,
+    X_scaled_test,
+    y_scaled_train,
+    y_scaled_val,
+    y_scaled_test,
+) = test_train_val_split(df_scaled)
+
+# %%
+svm_scaled_baseline = SVC(random_state=random_state)
+svm_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_val, svm_scaled_baseline.predict(X_scaled_val)))
+
+# %%
+svm_scaled_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_scaled_grid.fit(X_scaled_val, y_scaled_val)
+
+# %%
+print(svm_scaled_grid.best_params_)
+
+# %%
+svm_scaled = SVC(**svm_scaled_grid.best_params_, random_state=random_state)
+svm_scaled.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_test, svm_scaled.predict(X_scaled_test)))
 
 # %%
 benchmarkAndUpdateResult(
-    X_new_attacks_scaled,
-    y_new_attacks_scaled,
-    model_full_scaled,
-    model_full_scaled_name,
-    "New attacks",
-    "All features scaled",
-)
-
-# %%
-benchmarkAndUpdateResult(
-        X_new_attacks_pca_95,
-        y_new_attacks_pca_95,
-        model_full_pca,
-        model_full_pca_name,
-        "New attacks",
-        "PCA 95% on all features",
+        df_known_attacks,
+        svm_scaled,
+        f"SVM {svm_scaled_grid.best_params_}",
+        "Known attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
         )
 
 # %%
 benchmarkAndUpdateResult(
-    X_new_attacks_corr_gt1_scaled,
-    y_new_attacks_corr_gt1_scaled,
-    model_corr_gt1_scaled,
-    model_corr_gt1_scaled_name,
-    "New attacks",
-    "|correlation| > 0.1 features scaled",
-)
-
+        df_similar_attacks,
+        svm_scaled,
+        f"SVM {svm_scaled_grid.best_params_}",
+        "Similar attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
+        )
 # %%
 benchmarkAndUpdateResult(
-    X_new_attacks_corr_gt1_pca_95,
-    y_new_attacks_corr_gt1_pca_95,
-    model_corr_gt1_pca,
-    model_corr_gt1_pca_name,
-    "New attacks",
-    "PCA 95% on features with |correlation| > 0.1",
-)
-
+        df_new_attacks,
+        svm_scaled,
+        f"SVM {svm_scaled_grid.best_params_}",
+        "New attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler
+        )
 # %%
 benchmark_results
 
+# %% [markdown]
+# ### Features with |correlation| > 0.1 scaled
+
 # %%
-benchmark_results.to_csv("benchmark_results.csv", index=False)
+df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_gt1, cols=cols_corr_gt1)
+df_corr_gt1_scaled.head()
+
+# %%
+(
+    X_corr_gt1_scaled_train,
+    X_corr_gt1_scaled_val,
+    X_corr_gt1_scaled_test,
+    y_corr_gt1_scaled_train,
+    y_corr_gt1_scaled_val,
+    y_corr_gt1_scaled_test,
+) = test_train_val_split(df_corr_gt1_scaled)
+
+# %%
+svm_corr_gt1_scaled_baseline = SVC(random_state=random_state)
+svm_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+
+# %%
+print(classification_report(y_corr_gt1_scaled_val, svm_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
+
+# %%
+svm_corr_gt1_scaled_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
+
+# %%
+print(svm_corr_gt1_scaled_grid.best_params_)
+
+# %%
+svm_corr_gt1_scaled = SVC(**svm_corr_gt1_scaled_grid.best_params_, random_state=random_state)
+svm_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+
+# %%
+print(classification_report(y_corr_gt1_scaled_test, svm_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_corr_gt1_scaled,
+        f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        svm_corr_gt1_scaled,
+        f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1
+        )
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        svm_corr_gt1_scaled,
+        f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1
+        )
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### All features with 95% PCA
+
+# %%
+df_pca = pipeline_pca(df=df, scaler=scaler, pca=pca)
+df_pca.head()
+
+# %%
+(
+    X_pca_train,
+    X_pca_val,
+    X_pca_test,
+    y_pca_train,
+    y_pca_val,
+    y_pca_test,
+) = test_train_val_split(df_pca)
+
+# %%
+svm_pca_baseline = SVC(random_state=random_state)
+svm_pca_baseline.fit(X_pca_train, y_pca_train)
+
+# %%
+print(classification_report(y_pca_val, svm_pca_baseline.predict(X_pca_val)))
+
+# %%
+svm_pca_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_pca_grid.fit(X_pca_val, y_pca_val)
+
+# %%
+print(svm_pca_grid.best_params_)
+
+# %%
+svm_pca = SVC(**svm_pca_grid.best_params_, random_state=random_state)
+svm_pca.fit(X_pca_train, y_pca_train)
+
+# %%
+print(classification_report(y_pca_test, svm_pca.predict(X_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_pca,
+        f"SVM {svm_pca_grid.best_params_}",
+        "Known attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler,
+        pca=pca
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        svm_pca,
+        f"SVM {svm_pca_grid.best_params_}",
+        "Similar attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler,
+        pca=pca
+        )
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        svm_pca,
+        f"SVM {svm_pca_grid.best_params_}",
+        "New attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler,
+        pca=pca
+        )
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### Features with |correlation| > 0.1 with 95% PCA
+
+# %%
+df_corr_gt1_pca = pipeline_corr_gt1_pca(df=df, scaler=scaler_gt1, cols=cols_corr_gt1, pca=pca_corr_gt1)
+df_corr_gt1_pca.head()
+
+# %%
+(
+    X_corr_gt1_pca_train,
+    X_corr_gt1_pca_val,
+    X_corr_gt1_pca_test,
+    y_corr_gt1_pca_train,
+    y_corr_gt1_pca_val,
+    y_corr_gt1_pca_test,
+) = test_train_val_split(df_corr_gt1_pca)
+
+# %%
+svm_corr_gt1_pca_baseline = SVC(random_state=random_state)
+svm_corr_gt1_pca_baseline.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_val, svm_corr_gt1_pca_baseline.predict(X_corr_gt1_pca_val)))
+
+# %%
+svm_corr_gt1_pca_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_corr_gt1_pca_grid.fit(X_corr_gt1_pca_val, y_corr_gt1_pca_val)
+
+# %%
+print(svm_corr_gt1_pca_grid.best_params_)
+
+# %%
+svm_corr_gt1_pca = SVC(**svm_corr_gt1_pca_grid.best_params_, random_state=random_state)
+svm_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_test, svm_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        svm_corr_gt1_pca,
+        f"SVM {svm_corr_gt1_pca_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        svm_corr_gt1_pca,
+        f"SVM {svm_corr_gt1_pca_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1
+        )
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        svm_corr_gt1_pca,
+        f"SVM {svm_corr_gt1_pca_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1
+        )
+# %%
+benchmark_results

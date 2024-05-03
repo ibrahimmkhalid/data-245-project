@@ -8,10 +8,18 @@ except:
 
 # %%
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
-import time
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, classification_report, precision_score, recall_score, f1_score
+import time
 
+# %%
 pd.set_option("display.width", 10000)
 pd.set_option("display.max_rows", 500)
 pd.set_option("display.max_columns", 500)
@@ -88,17 +96,6 @@ def test_train_val_split(df, random_state=random_state):
     )
     return X_train, X_val, X_test, y_train, y_val, y_test
 
-
-# %%
-# sample binary classification, replace wiht the actual code for the project
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.svm import SVC
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV
 
 # %%
 if IN_COLAB:

@@ -96,6 +96,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
@@ -235,26 +236,10 @@ df_new_attacks["class"] = df_new_attacks["class"].replace({"normal": 0, "attack"
 
 # %%
 if TESTING:
-    df_similar_attacks = df_similar_attacks.sample(frac=0.01, random_state=random_state)
+    df_similar_attacks = df_similar_attacks.sample(frac=TESTING_SIZE, random_state=random_state)
     df_similar_attacks.reset_index(drop=True, inplace=True)
-    df_new_attacks = df_new_attacks.sample(frac=0.01, random_state=random_state)
+    df_new_attacks = df_new_attacks.sample(frac=TESTING_SIZE, random_state=random_state)
     df_new_attacks.reset_index(drop=True, inplace=True)
-
-# %% [markdown]
-# ## SVM
-
-# %%
-model_params = {
-    "C": [0.01, 0.1, 1, 10, 100, 1000],
-    "kernel": ["poly", "rbf", "sigmoid", "linear"],
-    "gamma": ["scale", "auto"],
-}
-
-# %%
-verbose = 3
-cv = 3
-n_jobs = None
-
 
 # %%
 def pipeline_scaled(**kwargs):
@@ -318,6 +303,23 @@ def pipeline_corr_gt1_pca(**kwargs):
     df_["class"] = df["class"]
     return df_
 
+
+# %% [markdown]
+# ## SVM
+
+# %%
+svm_params = {
+    "C": [0.01, 0.1, 1, 10, 100, 1000],
+    "kernel": ["poly", "rbf", "sigmoid", "linear"],
+    "gamma": ["scale", "auto"],
+}
+
+# %%
+verbose = 3
+cv = 3
+n_jobs = None
+
+
 # %% [markdown]
 # ### All features scaled
 
@@ -336,31 +338,31 @@ df_scaled.head()
 ) = test_train_val_split(df_scaled)
 
 # %%
-model_scaled_baseline = SVC(random_state=random_state)
-model_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+svm_scaled_baseline = SVC(random_state=random_state)
+svm_scaled_baseline.fit(X_scaled_train, y_scaled_train)
 
 # %%
-print(classification_report(y_scaled_val, model_scaled_baseline.predict(X_scaled_val)))
+print(classification_report(y_scaled_val, svm_scaled_baseline.predict(X_scaled_val)))
 
 # %%
-model_scaled_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_scaled_grid.fit(X_scaled_val, y_scaled_val)
+svm_scaled_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_scaled_grid.fit(X_scaled_val, y_scaled_val)
 
 # %%
-print(model_scaled_grid.best_params_)
+print(svm_scaled_grid.best_params_)
 
 # %%
-model_scaled = SVC(**model_scaled_grid.best_params_, random_state=random_state)
-model_scaled.fit(X_scaled_train, y_scaled_train)
+svm_scaled = SVC(**svm_scaled_grid.best_params_, random_state=random_state)
+svm_scaled.fit(X_scaled_train, y_scaled_train)
 
 # %%
-print(classification_report(y_scaled_test, model_scaled.predict(X_scaled_test)))
+print(classification_report(y_scaled_test, svm_scaled.predict(X_scaled_test)))
 
 # %%
 benchmarkAndUpdateResult(
         df_similar_attacks,
-        model_scaled,
-        f"SVM {model_scaled_grid.best_params_}",
+        svm_scaled,
+        f"SVM {svm_scaled_grid.best_params_}",
         "Similar attacks",
         "All features scaled",
         pipeline_scaled,
@@ -369,8 +371,8 @@ benchmarkAndUpdateResult(
 # %%
 benchmarkAndUpdateResult(
         df_new_attacks,
-        model_scaled,
-        f"SVM {model_scaled_grid.best_params_}",
+        svm_scaled,
+        f"SVM {svm_scaled_grid.best_params_}",
         "New attacks",
         "All features scaled",
         pipeline_scaled,
@@ -397,31 +399,31 @@ df_corr_gt1_scaled.head()
 ) = test_train_val_split(df_corr_gt1_scaled)
 
 # %%
-model_corr_gt1_scaled_baseline = SVC(random_state=random_state)
-model_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+svm_corr_gt1_scaled_baseline = SVC(random_state=random_state)
+svm_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 
 # %%
-print(classification_report(y_corr_gt1_scaled_val, model_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
+print(classification_report(y_corr_gt1_scaled_val, svm_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
 
 # %%
-model_corr_gt1_scaled_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
+svm_corr_gt1_scaled_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
 
 # %%
-print(model_corr_gt1_scaled_grid.best_params_)
+print(svm_corr_gt1_scaled_grid.best_params_)
 
 # %%
-model_corr_gt1_scaled = SVC(**model_corr_gt1_scaled_grid.best_params_, random_state=random_state)
-model_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+svm_corr_gt1_scaled = SVC(**svm_corr_gt1_scaled_grid.best_params_, random_state=random_state)
+svm_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 
 # %%
-print(classification_report(y_corr_gt1_scaled_test, model_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
+print(classification_report(y_corr_gt1_scaled_test, svm_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 
 # %%
 benchmarkAndUpdateResult(
         df_similar_attacks,
-        model_corr_gt1_scaled,
-        f"SVM {model_corr_gt1_scaled_grid.best_params_}",
+        svm_corr_gt1_scaled,
+        f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
         "Similar attacks",
         "|correlation| > 0.1 features scaled",
         pipeline_corr_gt1_scaled,
@@ -431,8 +433,8 @@ benchmarkAndUpdateResult(
 # %%
 benchmarkAndUpdateResult(
         df_new_attacks,
-        model_corr_gt1_scaled,
-        f"SVM {model_corr_gt1_scaled_grid.best_params_}",
+        svm_corr_gt1_scaled,
+        f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
         "New attacks",
         "|correlation| > 0.1 features scaled",
         pipeline_corr_gt1_scaled,
@@ -460,31 +462,31 @@ df_pca.head()
 ) = test_train_val_split(df_pca)
 
 # %%
-model_pca_baseline = SVC(random_state=random_state)
-model_pca_baseline.fit(X_pca_train, y_pca_train)
+svm_pca_baseline = SVC(random_state=random_state)
+svm_pca_baseline.fit(X_pca_train, y_pca_train)
 
 # %%
-print(classification_report(y_pca_val, model_pca_baseline.predict(X_pca_val)))
+print(classification_report(y_pca_val, svm_pca_baseline.predict(X_pca_val)))
 
 # %%
-model_pca_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_pca_grid.fit(X_pca_val, y_pca_val)
+svm_pca_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_pca_grid.fit(X_pca_val, y_pca_val)
 
 # %%
-print(model_pca_grid.best_params_)
+print(svm_pca_grid.best_params_)
 
 # %%
-model_pca = SVC(**model_pca_grid.best_params_, random_state=random_state)
-model_pca.fit(X_pca_train, y_pca_train)
+svm_pca = SVC(**svm_pca_grid.best_params_, random_state=random_state)
+svm_pca.fit(X_pca_train, y_pca_train)
 
 # %%
-print(classification_report(y_pca_test, model_pca.predict(X_pca_test)))
+print(classification_report(y_pca_test, svm_pca.predict(X_pca_test)))
 
 # %%
 benchmarkAndUpdateResult(
         df_similar_attacks,
-        model_pca,
-        f"SVM {model_pca_grid.best_params_}",
+        svm_pca,
+        f"SVM {svm_pca_grid.best_params_}",
         "Similar attacks",
         "All features with 95% PCA",
         pipeline_pca,
@@ -494,8 +496,8 @@ benchmarkAndUpdateResult(
 # %%
 benchmarkAndUpdateResult(
         df_new_attacks,
-        model_pca,
-        f"SVM {model_pca_grid.best_params_}",
+        svm_pca,
+        f"SVM {svm_pca_grid.best_params_}",
         "New attacks",
         "All features with 95% PCA",
         pipeline_pca,
@@ -523,31 +525,31 @@ df_corr_gt1_pca.head()
 ) = test_train_val_split(df_corr_gt1_pca)
 
 # %%
-model_corr_gt1_pca_baseline = SVC(random_state=random_state)
-model_corr_gt1_pca_baseline.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+svm_corr_gt1_pca_baseline = SVC(random_state=random_state)
+svm_corr_gt1_pca_baseline.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 
 # %%
-print(classification_report(y_corr_gt1_pca_val, model_corr_gt1_pca_baseline.predict(X_corr_gt1_pca_val)))
+print(classification_report(y_corr_gt1_pca_val, svm_corr_gt1_pca_baseline.predict(X_corr_gt1_pca_val)))
 
 # %%
-model_corr_gt1_pca_grid = GridSearchCV(SVC(random_state=random_state), model_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-model_corr_gt1_pca_grid.fit(X_corr_gt1_pca_val, y_corr_gt1_pca_val)
+svm_corr_gt1_pca_grid = GridSearchCV(SVC(random_state=random_state), svm_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+svm_corr_gt1_pca_grid.fit(X_corr_gt1_pca_val, y_corr_gt1_pca_val)
 
 # %%
-print(model_corr_gt1_pca_grid.best_params_)
+print(svm_corr_gt1_pca_grid.best_params_)
 
 # %%
-model_corr_gt1_pca = SVC(**model_corr_gt1_pca_grid.best_params_, random_state=random_state)
-model_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+svm_corr_gt1_pca = SVC(**svm_corr_gt1_pca_grid.best_params_, random_state=random_state)
+svm_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 
 # %%
-print(classification_report(y_corr_gt1_pca_test, model_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
+print(classification_report(y_corr_gt1_pca_test, svm_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
 
 # %%
 benchmarkAndUpdateResult(
         df_similar_attacks,
-        model_corr_gt1_pca,
-        f"SVM {model_corr_gt1_pca_grid.best_params_}",
+        svm_corr_gt1_pca,
+        f"SVM {svm_corr_gt1_pca_grid.best_params_}",
         "Similar attacks",
         "|correlation| > 0.1 features with 95% PCA",
         pipeline_corr_gt1_pca,
@@ -558,8 +560,8 @@ benchmarkAndUpdateResult(
 # %%
 benchmarkAndUpdateResult(
         df_new_attacks,
-        model_corr_gt1_pca,
-        f"SVM {model_corr_gt1_pca_grid.best_params_}",
+        svm_corr_gt1_pca,
+        f"SVM {svm_corr_gt1_pca_grid.best_params_}",
         "New attacks",
         "|correlation| > 0.1 features with 95% PCA",
         pipeline_corr_gt1_pca,

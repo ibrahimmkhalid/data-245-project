@@ -395,4 +395,3 @@ benchmarkAndUpdateResult(
         )
 # %%
 benchmark_results
-

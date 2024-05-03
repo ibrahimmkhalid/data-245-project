@@ -327,7 +327,7 @@ benchmark_results
 # %%
 def pipeline_scaled(**kwargs):
     if "df" not in kwargs or "scaler" not in kwargs:
-        raise ValueError("df, scaler, and cols must be passed as keyword arguments for pipeline_corr_gt1_scaled")
+        raise ValueError("df, scaler, and cols must be passed as keyword arguments for pipeline_scaled")
     df = kwargs["df"]
     scaler = kwargs["scaler"]
 

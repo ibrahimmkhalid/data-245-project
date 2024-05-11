@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-  context=5
+  context=2
 else
   context=$1
 fi

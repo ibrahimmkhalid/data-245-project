@@ -1,37 +1,49 @@
 Model,Dataset,Info,Data size,Accuracy,Precision,Recall,F1,Time per data per iter
-"SVM {'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",Known attacks,All features scaled,128,0.9921875,1.0,0.9772727272727273,0.9885057471264368,16836.0609375
-"SVM {'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",Similar attacks,All features scaled,264,0.9848484848484849,0.978021978021978,0.978021978021978,0.978021978021978,9382.940909090908
-"SVM {'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",New attacks,All features scaled,759,0.7931488801054019,0.8571428571428571,0.16483516483516483,0.27649769585253453,3868.045322793149
-"SVM {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",Known attacks,|correlation| > 0.1 features scaled,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,19019.140625
-"SVM {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",Similar attacks,|correlation| > 0.1 features scaled,264,0.9848484848484849,0.978021978021978,0.978021978021978,0.978021978021978,11577.932196969698
-"SVM {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",New attacks,|correlation| > 0.1 features scaled,759,0.764163372859025,0.5882352941176471,0.054945054945054944,0.10050251256281408,6608.105401844533
-"SVM {'C': 0.01, 'gamma': 'scale', 'kernel': 'linear'}",Known attacks,All features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,25537.38515625
-"SVM {'C': 0.01, 'gamma': 'scale', 'kernel': 'linear'}",Similar attacks,All features with 95% PCA,264,0.9659090909090909,0.9361702127659575,0.967032967032967,0.9513513513513513,26378.306818181816
-"SVM {'C': 0.01, 'gamma': 'scale', 'kernel': 'linear'}",New attacks,All features with 95% PCA,759,0.7852437417654808,0.6938775510204082,0.18681318681318682,0.2943722943722944,15727.470750988141
-"SVM {'C': 1, 'gamma': 'auto', 'kernel': 'rbf'}",Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,19530.81171875
-"SVM {'C': 1, 'gamma': 'auto', 'kernel': 'rbf'}",Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.9734848484848485,0.9666666666666667,0.9560439560439561,0.9613259668508287,10750.72196969697
-"SVM {'C': 1, 'gamma': 'auto', 'kernel': 'rbf'}",New attacks,|correlation| > 0.1 features with 95% PCA,759,0.7654808959156785,0.5909090909090909,0.07142857142857142,0.12745098039215685,15183.344532279316
-GaussianNB {'var_smoothing': 2.310129700083158e-05},Known attacks,All features scaled,128,0.8359375,0.676923076923077,1.0,0.8073394495412844,15111.225
-GaussianNB {'var_smoothing': 2.310129700083158e-05},Similar attacks,All features scaled,264,0.8295454545454546,0.7017543859649122,0.8791208791208791,0.7804878048780487,8328.936742424243
-GaussianNB {'var_smoothing': 2.310129700083158e-05},New attacks,All features scaled,759,0.7114624505928854,0.06976744186046512,0.016483516483516484,0.026666666666666665,2857.3034255599473
-GaussianNB {'var_smoothing': 2.848035868435799e-05},Known attacks,|correlation| > 0.1 features scaled,128,0.828125,0.671875,0.9772727272727273,0.7962962962962963,17092.82109375
-GaussianNB {'var_smoothing': 2.848035868435799e-05},Similar attacks,|correlation| > 0.1 features scaled,264,0.8106060606060606,0.6453900709219859,1.0,0.7844827586206896,7872.609848484848
-GaussianNB {'var_smoothing': 2.848035868435799e-05},New attacks,|correlation| > 0.1 features scaled,759,0.7101449275362319,0.3333333333333333,0.2087912087912088,0.2567567567567568,2859.35744400527
-GaussianNB {'var_smoothing': 0.533669923120631},Known attacks,All features with 95% PCA,128,0.6875,0.5238095238095238,1.0,0.6875000000000001,21046.696875
-GaussianNB {'var_smoothing': 0.533669923120631},Similar attacks,All features with 95% PCA,264,0.6325757575757576,0.4838709677419355,0.989010989010989,0.6498194945848376,17048.210606060606
-GaussianNB {'var_smoothing': 0.533669923120631},New attacks,All features with 95% PCA,759,0.4756258234519104,0.20491803278688525,0.41208791208791207,0.2737226277372263,6897.863636363637
-GaussianNB {'var_smoothing': 0.08111308307896872},Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.921875,0.8269230769230769,0.9772727272727273,0.8958333333333334,17329.68359375
-GaussianNB {'var_smoothing': 0.08111308307896872},Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.946969696969697,0.8666666666666667,1.0,0.9285714285714286,8734.062878787878
-GaussianNB {'var_smoothing': 0.08111308307896872},New attacks,|correlation| > 0.1 features with 95% PCA,759,0.766798418972332,0.5510204081632653,0.14835164835164835,0.23376623376623376,6029.390513833992
-"Logistic Regression {'C': 0.1, 'penalty': 'l2', 'solver': 'newton-cg'}",Known attacks,All features scaled,128,0.984375,1.0,0.9545454545454546,0.9767441860465117,34309.46484375
-"Logistic Regression {'C': 0.1, 'penalty': 'l2', 'solver': 'newton-cg'}",Similar attacks,All features scaled,264,0.9848484848484849,0.967741935483871,0.989010989010989,0.9782608695652174,16419.160984848488
-"Logistic Regression {'C': 0.1, 'penalty': 'l2', 'solver': 'newton-cg'}",New attacks,All features scaled,759,0.7944664031620553,0.8421052631578947,0.17582417582417584,0.2909090909090909,6082.127667984189
-"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Known attacks,|correlation| > 0.1 features scaled,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,16971.34375
-"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Similar attacks,|correlation| > 0.1 features scaled,264,0.9848484848484849,0.967741935483871,0.989010989010989,0.9782608695652174,7862.747348484848
-"Logistic Regression{'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",New attacks,|correlation| > 0.1 features scaled,759,0.7747035573122529,0.72,0.0989010989010989,0.17391304347826086,6604.5021080368915
-"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Known attacks,All features with 95% PCA,128,0.984375,1.0,0.9545454545454546,0.9767441860465117,26257.63203125
-"Logistic Regressiion {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Similar attacks,All features with 95% PCA,264,0.9659090909090909,0.9555555555555556,0.945054945054945,0.9502762430939227,20739.651136363635
-"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",New attacks,All features with 95% PCA,759,0.761528326745718,0.52,0.07142857142857142,0.12560386473429952,6718.020289855072
-"Logisitc Regression {'C': 0.01, 'penalty': 'none', 'solver': 'sag'}",Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,17287.05703125
-"Logistic Regression {'C': 0.01, 'penalty': 'none', 'solver': 'sag'}",Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.9772727272727273,0.9775280898876404,0.9560439560439561,0.9666666666666667,7916.620075757576
-"Logistic Regression {'C': 0.01, 'penalty': 'none', 'solver': 'sag'}",New attacks,|correlation| > 0.1 features with 95% PCA,759,0.7628458498023716,0.55,0.06043956043956044,0.1089108910891089,8651.594993412384
+"SVM {'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",Known attacks,All features scaled,128,0.9921875,1.0,0.9772727272727273,0.9885057471264368,18977.778125
+"SVM {'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",Similar attacks,All features scaled,264,0.9848484848484849,0.978021978021978,0.978021978021978,0.978021978021978,9947.35
+"SVM {'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",New attacks,All features scaled,759,0.7931488801054019,0.8571428571428571,0.16483516483516483,0.27649769585253453,4427.525691699605
+"SVM {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",Known attacks,|correlation| > 0.1 features scaled,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,23425.8359375
+"SVM {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",Similar attacks,|correlation| > 0.1 features scaled,264,0.9848484848484849,0.978021978021978,0.978021978021978,0.978021978021978,13842.027272727273
+"SVM {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",New attacks,|correlation| > 0.1 features scaled,759,0.764163372859025,0.5882352941176471,0.054945054945054944,0.10050251256281408,7424.635441370224
+"SVM {'C': 0.01, 'gamma': 'scale', 'kernel': 'linear'}",Known attacks,All features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,28550.7234375
+"SVM {'C': 0.01, 'gamma': 'scale', 'kernel': 'linear'}",Similar attacks,All features with 95% PCA,264,0.9659090909090909,0.9361702127659575,0.967032967032967,0.9513513513513513,28138.074621212123
+"SVM {'C': 0.01, 'gamma': 'scale', 'kernel': 'linear'}",New attacks,All features with 95% PCA,759,0.7852437417654808,0.6938775510204082,0.18681318681318682,0.2943722943722944,16722.901054018446
+"SVM {'C': 1, 'gamma': 'auto', 'kernel': 'rbf'}",Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,19964.7890625
+"SVM {'C': 1, 'gamma': 'auto', 'kernel': 'rbf'}",Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.9734848484848485,0.9666666666666667,0.9560439560439561,0.9613259668508287,11535.857575757576
+"SVM {'C': 1, 'gamma': 'auto', 'kernel': 'rbf'}",New attacks,|correlation| > 0.1 features with 95% PCA,759,0.7654808959156785,0.5909090909090909,0.07142857142857142,0.12745098039215685,15373.22305665349
+GaussianNB {'var_smoothing': 2.310129700083158e-05},Known attacks,All features scaled,128,0.8359375,0.676923076923077,1.0,0.8073394495412844,15988.5875
+GaussianNB {'var_smoothing': 2.310129700083158e-05},Similar attacks,All features scaled,264,0.8295454545454546,0.7017543859649122,0.8791208791208791,0.7804878048780487,8255.195454545454
+GaussianNB {'var_smoothing': 2.310129700083158e-05},New attacks,All features scaled,759,0.7114624505928854,0.06976744186046512,0.016483516483516484,0.026666666666666665,2961.1270092226614
+GaussianNB {'var_smoothing': 2.848035868435799e-05},Known attacks,|correlation| > 0.1 features scaled,128,0.828125,0.671875,0.9772727272727273,0.7962962962962963,22582.6796875
+GaussianNB {'var_smoothing': 2.848035868435799e-05},Similar attacks,|correlation| > 0.1 features scaled,264,0.8106060606060606,0.6453900709219859,1.0,0.7844827586206896,11498.09053030303
+GaussianNB {'var_smoothing': 2.848035868435799e-05},New attacks,|correlation| > 0.1 features scaled,759,0.7101449275362319,0.3333333333333333,0.2087912087912088,0.2567567567567568,3633.3565217391306
+GaussianNB {'var_smoothing': 0.533669923120631},Known attacks,All features with 95% PCA,128,0.6875,0.5238095238095238,1.0,0.6875000000000001,26640.0640625
+GaussianNB {'var_smoothing': 0.533669923120631},Similar attacks,All features with 95% PCA,264,0.6325757575757576,0.4838709677419355,0.989010989010989,0.6498194945848376,19988.602651515153
+GaussianNB {'var_smoothing': 0.533669923120631},New attacks,All features with 95% PCA,759,0.4756258234519104,0.20491803278688525,0.41208791208791207,0.2737226277372263,7598.318577075099
+GaussianNB {'var_smoothing': 0.08111308307896872},Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.921875,0.8269230769230769,0.9772727272727273,0.8958333333333334,23215.85859375
+GaussianNB {'var_smoothing': 0.08111308307896872},Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.946969696969697,0.8666666666666667,1.0,0.9285714285714286,9002.810984848486
+GaussianNB {'var_smoothing': 0.08111308307896872},New attacks,|correlation| > 0.1 features with 95% PCA,759,0.766798418972332,0.5510204081632653,0.14835164835164835,0.23376623376623376,6374.871673254282
+"Logistic Regression {'C': 0.1, 'penalty': 'l2', 'solver': 'newton-cg'}",Known attacks,All features scaled,128,0.984375,1.0,0.9545454545454546,0.9767441860465117,29157.81484375
+"Logistic Regression {'C': 0.1, 'penalty': 'l2', 'solver': 'newton-cg'}",Similar attacks,All features scaled,264,0.9848484848484849,0.967741935483871,0.989010989010989,0.9782608695652174,15919.843939393939
+"Logistic Regression {'C': 0.1, 'penalty': 'l2', 'solver': 'newton-cg'}",New attacks,All features scaled,759,0.7944664031620553,0.8421052631578947,0.17582417582417584,0.2909090909090909,5919.116469038208
+"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Known attacks,|correlation| > 0.1 features scaled,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,17009.7546875
+"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Similar attacks,|correlation| > 0.1 features scaled,264,0.9848484848484849,0.967741935483871,0.989010989010989,0.9782608695652174,7706.104166666667
+"Logistic Regression{'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",New attacks,|correlation| > 0.1 features scaled,759,0.7747035573122529,0.72,0.0989010989010989,0.17391304347826086,6851.227799736496
+"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Known attacks,All features with 95% PCA,128,0.984375,1.0,0.9545454545454546,0.9767441860465117,24749.1984375
+"Logistic Regressiion {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",Similar attacks,All features with 95% PCA,264,0.9659090909090909,0.9555555555555556,0.945054945054945,0.9502762430939227,22734.196969696968
+"Logistic Regression {'C': 1, 'penalty': 'l1', 'solver': 'liblinear'}",New attacks,All features with 95% PCA,759,0.761528326745718,0.52,0.07142857142857142,0.12560386473429952,12129.535704874836
+"Logisitc Regression {'C': 0.01, 'penalty': 'none', 'solver': 'sag'}",Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,21772.67109375
+"Logistic Regression {'C': 0.01, 'penalty': 'none', 'solver': 'sag'}",Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.9772727272727273,0.9775280898876404,0.9560439560439561,0.9666666666666667,11603.320454545454
+"Logistic Regression {'C': 0.01, 'penalty': 'none', 'solver': 'sag'}",New attacks,|correlation| > 0.1 features with 95% PCA,759,0.7628458498023716,0.55,0.06043956043956044,0.1089108910891089,6020.081818181819
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 1}",Known attacks,All features scaled,128,1.0,1.0,1.0,1.0,79530.21796875
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 1}",Similar attacks,All features scaled,264,0.9962121212121212,1.0,0.989010989010989,0.994475138121547,59555.05643939394
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 1}",New attacks,All features scaled,759,0.7654808959156785,0.6111111111111112,0.06043956043956044,0.10999999999999999,9046.344137022399
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 400, 'scale_pos_weight': 0.1}",Known attacks,|correlation| > 0.1 features scaled,128,0.9921875,1.0,0.9772727272727273,0.9885057471264368,48697.21953125
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 400, 'scale_pos_weight': 0.1}",Similar attacks,|correlation| > 0.1 features scaled,264,0.9962121212121212,1.0,0.989010989010989,0.994475138121547,15938.736742424244
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 400, 'scale_pos_weight': 0.1}",New attacks,|correlation| > 0.1 features scaled,759,0.7733860342555995,1.0,0.054945054945054944,0.10416666666666666,5730.854677206851
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.1, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 10}",Known attacks,All features with 95% PCA,128,0.9765625,0.9767441860465116,0.9545454545454546,0.9655172413793104,245555.3578125
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.1, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 10}",Similar attacks,All features with 95% PCA,264,0.9545454545454546,0.898989898989899,0.978021978021978,0.9368421052631579,221740.05113636362
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.1, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 10}",New attacks,All features with 95% PCA,759,0.782608695652174,0.673469387755102,0.1813186813186813,0.2857142857142857,82399.85928853755
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.2, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 10}",Known attacks,|correlation| > 0.1 features with 95% PCA,128,0.96875,0.9761904761904762,0.9318181818181818,0.9534883720930233,25685.884375
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.2, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 10}",Similar attacks,|correlation| > 0.1 features with 95% PCA,264,0.9962121212121212,0.9891304347826086,1.0,0.994535519125683,29261.6125
+"XGBClassifier {'gamma': 0.1, 'learning_rate': 0.2, 'max_depth': 10, 'n_estimators': 100, 'scale_pos_weight': 10}",New attacks,|correlation| > 0.1 features with 95% PCA,759,0.7747035573122529,0.7391304347826086,0.09340659340659341,0.16585365853658535,76924.00395256917

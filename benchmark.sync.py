@@ -18,6 +18,7 @@ from sklearn.metrics import accuracy_score, classification_report, precision_sco
 from sklearn.naive_bayes import ComplementNB, GaussianNB
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
 import time
 
 # %%
@@ -1423,6 +1424,325 @@ benchmarkAndUpdateResult(
         df_new_attacks,
         log_corr_gt1_pca,
         f"Logistic Regression {log_corr_gt1_pca_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1_standard
+        )
+
+# %%
+benchmark_results
+# %% [markdown]
+# ## XGBoost
+
+# %%
+xgb_params = {
+    'max_depth': [10, 20, 30, 40, 50],
+    'n_estimators': [100, 200, 400, 800],
+    'learning_rate': [0.01, 0.1, 0.2],
+    'gamma': [0.1, 0.5, 1],
+    'scale_pos_weight': [0.1, 1, 5, 10]
+}
+
+# %% [markdown]
+# ### All features scaled
+
+# %%
+df_scaled = pipeline_scaled(df=df, scaler=scaler_standard)
+df_scaled.head()
+
+# %%
+(
+    X_scaled_train,
+    X_scaled_val,
+    X_scaled_test,
+    y_scaled_train,
+    y_scaled_val,
+    y_scaled_test,
+) = test_train_val_split(df_scaled)
+
+# %%
+xgb_mod_base = XGBClassifier(random_state=random_state)
+xgb_mod_base.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_val, xgb_mod_base.predict(X_scaled_val)))
+
+# %%
+xgb_scaled_grid = GridSearchCV(XGBClassifier(random_state=random_state), xgb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+xgb_scaled_grid.fit(X_scaled_val, y_scaled_val)
+
+# %%
+print(xgb_scaled_grid.best_params_)
+
+# %%
+xgb_scaled = XGBClassifier(**xgb_scaled_grid.best_params_, random_state=random_state)
+xgb_scaled.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_test, xgb_scaled.predict(X_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        xgb_scaled,
+        f"XGBClassifier {xgb_scaled_grid.best_params_}",
+        "Known attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        xgb_scaled,
+        f"XGBClassifier {xgb_scaled_grid.best_params_}",
+        "Similar attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        xgb_scaled,
+        f"XGBClassifier {xgb_scaled_grid.best_params_}",
+        "New attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler_standard
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### Features with |correlation| > 0.1 scaled
+
+# %%
+df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_standard_gt1, cols=cols_corr_gt1)
+df_corr_gt1_scaled.head()
+
+# %%
+(
+    X_corr_gt1_scaled_train,
+    X_corr_gt1_scaled_val,
+    X_corr_gt1_scaled_test,
+    y_corr_gt1_scaled_train,
+    y_corr_gt1_scaled_val,
+    y_corr_gt1_scaled_test,
+) = test_train_val_split(df_corr_gt1_scaled)
+
+# %%
+xgb_corr_gt1_scaled_baseline = XGBClassifier(random_state=random_state)
+xgb_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+
+# %%
+print(classification_report(y_corr_gt1_scaled_val, xgb_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
+
+# %%
+xgb_corr_gt1_scaled_grid = GridSearchCV(XGBClassifier(random_state=random_state), xgb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+xgb_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
+
+# %%
+print(xgb_corr_gt1_scaled_grid.best_params_)
+
+# %%
+xgb_corr_gt1_scaled = XGBClassifier(**xgb_corr_gt1_scaled_grid.best_params_, random_state=random_state)
+xgb_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+
+# %%
+print(classification_report(y_corr_gt1_scaled_test, xgb_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        xgb_corr_gt1_scaled,
+        f"XGBClassifier {xgb_corr_gt1_scaled_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        xgb_corr_gt1_scaled,
+        f"XGBClassifier {xgb_corr_gt1_scaled_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        xgb_corr_gt1_scaled,
+        f"XGBClassifier {xgb_corr_gt1_scaled_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### All features with 95% PCA
+
+# %%
+df_pca = pipeline_pca(df=df, scaler=scaler_standard, pca=pca_standard)
+df_pca.head()
+
+# %%
+(
+    X_pca_train,
+    X_pca_val,
+    X_pca_test,
+    y_pca_train,
+    y_pca_val,
+    y_pca_test,
+) = test_train_val_split(df_pca)
+
+# %%
+xgb_pca_baseline = XGBClassifier(random_state=random_state)
+xgb_pca_baseline.fit(X_pca_train, y_pca_train)
+
+# %%
+print(classification_report(y_pca_val, xgb_pca_baseline.predict(X_pca_val)))
+
+# %%
+xgb_pca_grid = GridSearchCV(XGBClassifier(random_state=random_state), xgb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+xgb_pca_grid.fit(X_pca_val, y_pca_val)
+
+# %%
+print(xgb_pca_grid.best_params_)
+
+# %%
+xgb_pca = XGBClassifier(**xgb_pca_grid.best_params_, random_state=random_state)
+xgb_pca.fit(X_pca_train, y_pca_train)
+
+# %%
+print(classification_report(y_pca_test, xgb_pca.predict(X_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        xgb_pca,
+        f"XGBClassifier {xgb_pca_grid.best_params_}",
+        "Known attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler_standard,
+        pca=pca_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        xgb_pca,
+        f"XGBClassifier {xgb_pca_grid.best_params_}",
+        "Similar attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler_standard,
+        pca=pca_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        xgb_pca,
+        f"XGBClassifier {xgb_pca_grid.best_params_}",
+        "New attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler_standard,
+        pca=pca_standard
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### Features with |correlation| > 0.1 with 95% PCA
+
+# %%
+df_corr_gt1_pca = pipeline_corr_gt1_pca(df=df, scaler=scaler_standard_gt1, cols=cols_corr_gt1, pca=pca_corr_gt1_standard)
+df_corr_gt1_pca.head()
+
+# %%
+(
+    X_corr_gt1_pca_train,
+    X_corr_gt1_pca_val,
+    X_corr_gt1_pca_test,
+    y_corr_gt1_pca_train,
+    y_corr_gt1_pca_val,
+    y_corr_gt1_pca_test,
+) = test_train_val_split(df_corr_gt1_pca)
+
+# %%
+xgb_corr_gt1_pca_baseline = XGBClassifier(random_state=random_state)
+xgb_corr_gt1_pca_baseline.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_val, xgb_corr_gt1_pca_baseline.predict(X_corr_gt1_pca_val)))
+
+# %%
+xgb_corr_gt1_pca_grid = GridSearchCV(XGBClassifier(random_state=random_state), xgb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+xgb_corr_gt1_pca_grid.fit(X_corr_gt1_pca_val, y_corr_gt1_pca_val)
+
+# %%
+print(xgb_corr_gt1_pca_grid.best_params_)
+
+# %%
+xgb_corr_gt1_pca = XGBClassifier(**xgb_corr_gt1_pca_grid.best_params_, random_state=random_state)
+xgb_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_test, xgb_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        xgb_corr_gt1_pca,
+        f"XGBClassifier {xgb_corr_gt1_pca_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        xgb_corr_gt1_pca,
+        f"XGBClassifier {xgb_corr_gt1_pca_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        xgb_corr_gt1_pca,
+        f"XGBClassifier {xgb_corr_gt1_pca_grid.best_params_}",
         "New attacks",
         "|correlation| > 0.1 features with 95% PCA",
         pipeline_corr_gt1_pca,

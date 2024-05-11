@@ -654,6 +654,7 @@ benchmarkAndUpdateResult(
         pca=pca_corr_gt1_standard
         )
 
+# %%
 # # %% [markdown]
 # # ## Complement Naive Bayes
 #
@@ -1104,6 +1105,324 @@ benchmarkAndUpdateResult(
         df_new_attacks,
         gnb_corr_gt1_pca,
         f"GaussianNB {gnb_corr_gt1_pca_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1_standard
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ## Logistic Regression
+
+# %%
+log_param_grid = {
+    'C': [0.01, 0.1, 1, 10, 100],  # Regularization strength
+    'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],  # Algorithm to use in the optimization problem
+    'penalty': ['l1', 'l2', 'elasticnet', 'none']  # Norm used in the penalization
+}
+
+# %% [markdown]
+# ### All features scaled
+
+# %%
+df_scaled = pipeline_scaled(df=df, scaler=scaler_standard)
+df_scaled.head()
+
+# %%
+(
+    X_scaled_train,
+    X_scaled_val,
+    X_scaled_test,
+    y_scaled_train,
+    y_scaled_val,
+    y_scaled_test,
+) = test_train_val_split(df_scaled)
+
+# %%
+log_scaled_baseline = LogisticRegression(random_state=random_state)
+log_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_val, log_scaled_baseline.predict(X_scaled_val)))
+
+# %%
+log_scaled_grid = GridSearchCV(LogisticRegression(random_state=245), log_param_grid, cv=cv, n_jobs=n_jobs, verbose=verbose)
+log_scaled_grid.fit(X_scaled_val, y_scaled_val)
+
+# %%
+print(log_scaled_grid.best_params_)
+
+# %%
+log_scaled = LogisticRegression(**log_scaled_grid.best_params_, random_state=random_state)
+log_scaled.fit(X_scaled_train, y_scaled_train)
+
+# %%
+print(classification_report(y_scaled_test, log_scaled.predict(X_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        log_scaled,
+        f"Logistic Regression {log_scaled_grid.best_params_}",
+        "Known attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        log_scaled,
+        f"Logistic Regression {log_scaled_grid.best_params_}",
+        "Similar attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        log_scaled,
+        f"Logistic Regression {log_scaled_grid.best_params_}",
+        "New attacks",
+        "All features scaled",
+        pipeline_scaled,
+        scaler=scaler_standard
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### Features with |correlation| > 0.1 scaled
+
+# %%
+df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_standard_gt1, cols=cols_corr_gt1)
+df_corr_gt1_scaled.head()
+
+# %%
+(
+    X_corr_gt1_scaled_train,
+    X_corr_gt1_scaled_val,
+    X_corr_gt1_scaled_test,
+    y_corr_gt1_scaled_train,
+    y_corr_gt1_scaled_val,
+    y_corr_gt1_scaled_test,
+) = test_train_val_split(df_corr_gt1_scaled)
+
+# %%
+log_corr_gt1_scaled_baseline = LogisticRegression(random_state=random_state)
+log_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+
+# %%
+print(classification_report(y_corr_gt1_scaled_val, log_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
+
+# %%
+log_corr_gt1_scaled_grid = GridSearchCV(LogisticRegression(random_state=random_state), log_param_grid, cv=cv, n_jobs=n_jobs, verbose=verbose)
+log_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
+
+# %%
+print(log_corr_gt1_scaled_grid.best_params_)
+
+# %%
+log_corr_gt1_scaled = LogisticRegression(**log_corr_gt1_scaled_grid.best_params_, random_state=random_state)
+log_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+
+# %%
+print(classification_report(y_corr_gt1_scaled_test, log_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        log_corr_gt1_scaled,
+        f"Logistic Regression {log_corr_gt1_scaled_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        log_corr_gt1_scaled,
+        f"Logistic Regression {log_corr_gt1_scaled_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        log_corr_gt1_scaled,
+        f"Logistic Regression{log_corr_gt1_scaled_grid.best_params_}",
+        "New attacks",
+        "|correlation| > 0.1 features scaled",
+        pipeline_corr_gt1_scaled,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### All features with 95% PCA
+
+# %%
+df_pca = pipeline_pca(df=df, scaler=scaler_standard, pca=pca_standard)
+df_pca.head()
+
+# %%
+(
+    X_pca_train,
+    X_pca_val,
+    X_pca_test,
+    y_pca_train,
+    y_pca_val,
+    y_pca_test,
+) = test_train_val_split(df_pca)
+
+# %%
+log_pca_baseline = LogisticRegression(random_state=random_state)
+log_pca_baseline.fit(X_pca_train, y_pca_train)
+
+# %%
+print(classification_report(y_pca_val, log_pca_baseline.predict(X_pca_val)))
+
+# %%
+log_pca_grid = GridSearchCV(LogisticRegression(random_state=random_state), log_param_grid, cv=cv, n_jobs=n_jobs, verbose=verbose)
+log_pca_grid.fit(X_pca_val, y_pca_val)
+
+# %%
+print(log_pca_grid.best_params_)
+
+# %%
+log_pca = LogisticRegression(**log_pca_grid.best_params_, random_state=random_state)
+log_pca.fit(X_pca_train, y_pca_train)
+
+# %%
+print(classification_report(y_pca_test, log_pca.predict(X_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        log_pca,
+        f"Logistic Regression {log_pca_grid.best_params_}",
+        "Known attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler_standard,
+        pca=pca_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        log_pca,
+        f"Logistic Regressiion {log_pca_grid.best_params_}",
+        "Similar attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler_standard,
+        pca=pca_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        log_pca,
+        f"Logistic Regression {log_pca_grid.best_params_}",
+        "New attacks",
+        "All features with 95% PCA",
+        pipeline_pca,
+        scaler=scaler_standard,
+        pca=pca_standard
+        )
+
+# %%
+benchmark_results
+
+# %% [markdown]
+# ### Features with |correlation| > 0.1 with 95% PCA
+
+# %%
+df_corr_gt1_pca = pipeline_corr_gt1_pca(df=df, scaler=scaler_standard_gt1, cols=cols_corr_gt1, pca=pca_corr_gt1_standard)
+df_corr_gt1_pca.head()
+
+# %%
+(
+    X_corr_gt1_pca_train,
+    X_corr_gt1_pca_val,
+    X_corr_gt1_pca_test,
+    y_corr_gt1_pca_train,
+    y_corr_gt1_pca_val,
+    y_corr_gt1_pca_test,
+) = test_train_val_split(df_corr_gt1_pca)
+
+# %%
+log_corr_gt1_pca_baseline = LogisticRegression(random_state=random_state)
+log_corr_gt1_pca_baseline.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_val, log_corr_gt1_pca_baseline.predict(X_corr_gt1_pca_val)))
+
+# %%
+log_corr_gt1_pca_grid = GridSearchCV(LogisticRegression(random_state=random_state), log_param_grid, cv=cv, n_jobs=n_jobs, verbose=verbose)
+log_corr_gt1_pca_grid.fit(X_corr_gt1_pca_val, y_corr_gt1_pca_val)
+
+# %%
+print(log_corr_gt1_pca_grid.best_params_)
+
+# %%
+log_corr_gt1_pca = LogisticRegression(**log_corr_gt1_pca_grid.best_params_, random_state=random_state)
+log_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
+
+# %%
+print(classification_report(y_corr_gt1_pca_test, log_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
+
+# %%
+benchmarkAndUpdateResult(
+        df_known_attacks,
+        log_corr_gt1_pca,
+        f"Logisitc Regression {log_corr_gt1_pca_grid.best_params_}",
+        "Known attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_similar_attacks,
+        log_corr_gt1_pca,
+        f"Logistic Regression {log_corr_gt1_pca_grid.best_params_}",
+        "Similar attacks",
+        "|correlation| > 0.1 features with 95% PCA",
+        pipeline_corr_gt1_pca,
+        scaler=scaler_standard_gt1,
+        cols=cols_corr_gt1,
+        pca=pca_corr_gt1_standard
+        )
+
+# %%
+benchmarkAndUpdateResult(
+        df_new_attacks,
+        log_corr_gt1_pca,
+        f"Logistic Regression {log_corr_gt1_pca_grid.best_params_}",
         "New attacks",
         "|correlation| > 0.1 features with 95% PCA",
         pipeline_corr_gt1_pca,

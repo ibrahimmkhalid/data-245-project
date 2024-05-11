@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, classification_report, precision_score, recall_score, f1_score
 from sklearn.naive_bayes import ComplementNB, GaussianNB
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 import time
 
 # %%
@@ -25,7 +26,7 @@ pd.set_option("display.max_rows", 500)
 pd.set_option("display.max_columns", 500)
 pd.set_option("display.max_colwidth", None)
 
-TESTING = False
+TESTING = True
 TESTING_SIZE = 0.01
 BENCMARK_ITER_N = 10
 random_state = 245
@@ -216,43 +217,43 @@ plt.show()
 # %%
 print(f"at n={np.where(pca_cumsum > 0.95)[0][0]}, we have 95% of the variance explained")
 
-# %%
-scaler_minmax = MinMaxScaler()
-X_scaled = scaler_minmax.fit_transform(X)
-
-pca_minmax= PCA(n_components=len(df.columns) - 1)
-X_pca = pca_minmax.fit_transform(X_scaled)
-
-pca_cumsum = pca_minmax.explained_variance_ratio_.cumsum()
-plt.plot(pca_cumsum)
-plt.xlabel("Number of components")
-plt.ylabel("Cumulative explained variance")
-plt.title("Cumulative explained variance vs Number of components\nUsing MinMax Scaler")
-plt.grid()
-plt.xticks(range(0, len(df.columns) - 1, 2))
-plt.show()
-
-# %%
-print(f"at n={np.where(pca_cumsum > 0.95)[0][0]}, we have 95% of the variance explained")
-
-# %%
-scaler_minmax_gt1 = MinMaxScaler()
-X_gt1_scaled = scaler_minmax_gt1.fit_transform(X_gt1)
-
-pca_corr_gt1_minmax = PCA(n_components=len(cols_corr_gt1) - 1)
-X_gt1_pca = pca_corr_gt1_minmax.fit_transform(X_gt1_scaled)
-
-pca_cumsum = pca_corr_gt1_minmax.explained_variance_ratio_.cumsum()
-plt.plot(pca_cumsum)
-plt.xlabel("Number of components with |correlation| > 0.1")
-plt.ylabel("Cumulative explained variance")
-plt.title("Cumulative explained variance vs Number of components with |correlation| > 0.1\nUsing MinMax Scaler")
-plt.grid()
-plt.xticks(range(0, len(cols_corr_gt1) - 1, 2))
-plt.show()
-
-# %%
-print(f"at n={np.where(pca_cumsum > 0.95)[0][0]}, we have 95% of the variance explained")
+# # %%
+# scaler_minmax = MinMaxScaler()
+# X_scaled = scaler_minmax.fit_transform(X)
+#
+# pca_minmax= PCA(n_components=len(df.columns) - 1)
+# X_pca = pca_minmax.fit_transform(X_scaled)
+#
+# pca_cumsum = pca_minmax.explained_variance_ratio_.cumsum()
+# plt.plot(pca_cumsum)
+# plt.xlabel("Number of components")
+# plt.ylabel("Cumulative explained variance")
+# plt.title("Cumulative explained variance vs Number of components\nUsing MinMax Scaler")
+# plt.grid()
+# plt.xticks(range(0, len(df.columns) - 1, 2))
+# plt.show()
+#
+# # %%
+# print(f"at n={np.where(pca_cumsum > 0.95)[0][0]}, we have 95% of the variance explained")
+#
+# # %%
+# scaler_minmax_gt1 = MinMaxScaler()
+# X_gt1_scaled = scaler_minmax_gt1.fit_transform(X_gt1)
+#
+# pca_corr_gt1_minmax = PCA(n_components=len(cols_corr_gt1) - 1)
+# X_gt1_pca = pca_corr_gt1_minmax.fit_transform(X_gt1_scaled)
+#
+# pca_cumsum = pca_corr_gt1_minmax.explained_variance_ratio_.cumsum()
+# plt.plot(pca_cumsum)
+# plt.xlabel("Number of components with |correlation| > 0.1")
+# plt.ylabel("Cumulative explained variance")
+# plt.title("Cumulative explained variance vs Number of components with |correlation| > 0.1\nUsing MinMax Scaler")
+# plt.grid()
+# plt.xticks(range(0, len(cols_corr_gt1) - 1, 2))
+# plt.show()
+#
+# # %%
+# print(f"at n={np.where(pca_cumsum > 0.95)[0][0]}, we have 95% of the variance explained")
 
 # %% [markdown]
 # # Modelling
@@ -653,172 +654,167 @@ benchmarkAndUpdateResult(
         pca=pca_corr_gt1_standard
         )
 
-# %% [markdown]
-# ## Complement Naive Bayes
-
-# %%
-cnb_params = {
-    "alpha": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-    "force_alpha": [True, False],
-    "fit_prior": [True, False],
-    "norm": [True, False],
-}
-
-# %% [markdown]
-# ### All features scaled
-
-# %%
-df_scaled = pipeline_scaled(df=df, scaler=scaler_minmax)
-df_scaled.head()
-
-# %%
-(
-    X_scaled_train,
-    X_scaled_val,
-    X_scaled_test,
-    y_scaled_train,
-    y_scaled_val,
-    y_scaled_test,
-) = test_train_val_split(df_scaled)
-
-# %%
-cnb_scaled_baseline = ComplementNB()
-cnb_scaled_baseline.fit(X_scaled_train, y_scaled_train)
-
-# %%
-print(classification_report(y_scaled_val, cnb_scaled_baseline.predict(X_scaled_val)))
-
-# %%
-cnb_scaled_grid = GridSearchCV(ComplementNB(), cnb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-cnb_scaled_grid.fit(X_scaled_val, y_scaled_val)
-
-# %%
-print(cnb_scaled_grid.best_params_)
-
-# %%
-cnb_scaled = ComplementNB(**cnb_scaled_grid.best_params_)
-cnb_scaled.fit(X_scaled_train, y_scaled_train)
-
-# %%
-print(classification_report(y_scaled_test, cnb_scaled.predict(X_scaled_test)))
-
-# %%
-benchmarkAndUpdateResult(
-        df_known_attacks,
-        cnb_scaled,
-        f"ComplementNB {cnb_scaled_grid.best_params_}",
-        "Known attacks",
-        "All features scaled",
-        pipeline_scaled,
-        scaler=scaler_minmax
-        )
-
-# %%
-benchmarkAndUpdateResult(
-        df_similar_attacks,
-        cnb_scaled,
-        f"ComplementNB {cnb_scaled_grid.best_params_}",
-        "Similar attacks",
-        "All features scaled",
-        pipeline_scaled,
-        scaler=scaler_minmax
-        )
-
-# %%
-benchmarkAndUpdateResult(
-        df_new_attacks,
-        cnb_scaled,
-        f"ComplementNB {cnb_scaled_grid.best_params_}",
-        "New attacks",
-        "All features scaled",
-        pipeline_scaled,
-        scaler=scaler_minmax
-        )
-
-# %% [markdown]
-# ### Features with |correlation| > 0.1 scaled
-
-# %%
-df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_minmax_gt1, cols=cols_corr_gt1)
-df_corr_gt1_scaled.head()
-
-# %%
-(
-    X_corr_gt1_scaled_train,
-    X_corr_gt1_scaled_val,
-    X_corr_gt1_scaled_test,
-    y_corr_gt1_scaled_train,
-    y_corr_gt1_scaled_val,
-    y_corr_gt1_scaled_test,
-) = test_train_val_split(df_corr_gt1_scaled)
-
-# %%
-cnb_corr_gt1_scaled_baseline = ComplementNB()
-cnb_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
-
-# %%
-print(classification_report(y_corr_gt1_scaled_val, cnb_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
-
-# %%
-cnb_corr_gt1_scaled_grid = GridSearchCV(ComplementNB(), cnb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
-cnb_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
-
-# %%
-print(cnb_corr_gt1_scaled_grid.best_params_)
-
-# %%
-cnb_corr_gt1_scaled = ComplementNB(**cnb_corr_gt1_scaled_grid.best_params_)
-cnb_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
-
-# %%
-print(classification_report(y_corr_gt1_scaled_test, cnb_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
-
-# %%
-benchmarkAndUpdateResult(
-        df_known_attacks,
-        cnb_corr_gt1_scaled,
-        f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
-        "Known attacks",
-        "|correlation| > 0.1 features scaled",
-        pipeline_corr_gt1_scaled,
-        scaler=scaler_minmax_gt1,
-        cols=cols_corr_gt1
-        )
-
-# %%
-benchmarkAndUpdateResult(
-        df_similar_attacks,
-        cnb_corr_gt1_scaled,
-        f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
-        "Similar attacks",
-        "|correlation| > 0.1 features scaled",
-        pipeline_corr_gt1_scaled,
-        scaler=scaler_minmax_gt1,
-        cols=cols_corr_gt1
-        )
-
-# %%
-benchmarkAndUpdateResult(
-        df_new_attacks,
-        cnb_corr_gt1_scaled,
-        f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
-        "New attacks",
-        "|correlation| > 0.1 features scaled",
-        pipeline_corr_gt1_scaled,
-        scaler=scaler_minmax_gt1,
-        cols=cols_corr_gt1
-        )
-
+# # %% [markdown]
+# # ## Complement Naive Bayes
+#
+# # %%
+# cnb_params = {
+#     "alpha": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+#     "force_alpha": [True, False],
+#     "fit_prior": [True, False],
+#     "norm": [True, False],
+# }
+#
+# # %% [markdown]
+# # ### All features scaled
+#
+# # %%
+# df_scaled = pipeline_scaled(df=df, scaler=scaler_minmax)
+# df_scaled.head()
+#
+# # %%
+# (
+#     X_scaled_train,
+#     X_scaled_val,
+#     X_scaled_test,
+#     y_scaled_train,
+#     y_scaled_val,
+#     y_scaled_test,
+# ) = test_train_val_split(df_scaled)
+#
+# # %%
+# cnb_scaled_baseline = ComplementNB()
+# cnb_scaled_baseline.fit(X_scaled_train, y_scaled_train)
+#
+# # %%
+# print(classification_report(y_scaled_val, cnb_scaled_baseline.predict(X_scaled_val)))
+#
+# # %%
+# cnb_scaled_grid = GridSearchCV(ComplementNB(), cnb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+# cnb_scaled_grid.fit(X_scaled_val, y_scaled_val)
+#
+# # %%
+# print(cnb_scaled_grid.best_params_)
+#
+# # %%
+# cnb_scaled = ComplementNB(**cnb_scaled_grid.best_params_)
+# cnb_scaled.fit(X_scaled_train, y_scaled_train)
+#
+# # %%
+# print(classification_report(y_scaled_test, cnb_scaled.predict(X_scaled_test)))
+#
+# # %%
+# benchmarkAndUpdateResult(
+#         df_known_attacks,
+#         cnb_scaled,
+#         f"ComplementNB {cnb_scaled_grid.best_params_}",
+#         "Known attacks",
+#         "All features scaled",
+#         pipeline_scaled,
+#         scaler=scaler_minmax
+#         )
+#
+# # %%
+# benchmarkAndUpdateResult(
+#         df_similar_attacks,
+#         cnb_scaled,
+#         f"ComplementNB {cnb_scaled_grid.best_params_}",
+#         "Similar attacks",
+#         "All features scaled",
+#         pipeline_scaled,
+#         scaler=scaler_minmax
+#         )
+#
+# # %%
+# benchmarkAndUpdateResult(
+#         df_new_attacks,
+#         cnb_scaled,
+#         f"ComplementNB {cnb_scaled_grid.best_params_}",
+#         "New attacks",
+#         "All features scaled",
+#         pipeline_scaled,
+#         scaler=scaler_minmax
+#         )
+#
+# # %% [markdown]
+# # ### Features with |correlation| > 0.1 scaled
+#
+# # %%
+# df_corr_gt1_scaled = pipeline_corr_gt1_scaled(df=df, scaler=scaler_minmax_gt1, cols=cols_corr_gt1)
+# df_corr_gt1_scaled.head()
+#
+# # %%
+# (
+#     X_corr_gt1_scaled_train,
+#     X_corr_gt1_scaled_val,
+#     X_corr_gt1_scaled_test,
+#     y_corr_gt1_scaled_train,
+#     y_corr_gt1_scaled_val,
+#     y_corr_gt1_scaled_test,
+# ) = test_train_val_split(df_corr_gt1_scaled)
+#
+# # %%
+# cnb_corr_gt1_scaled_baseline = ComplementNB()
+# cnb_corr_gt1_scaled_baseline.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+#
+# # %%
+# print(classification_report(y_corr_gt1_scaled_val, cnb_corr_gt1_scaled_baseline.predict(X_corr_gt1_scaled_val)))
+#
+# # %%
+# cnb_corr_gt1_scaled_grid = GridSearchCV(ComplementNB(), cnb_params, cv=cv, n_jobs=n_jobs, verbose=verbose)
+# cnb_corr_gt1_scaled_grid.fit(X_corr_gt1_scaled_val, y_corr_gt1_scaled_val)
+#
+# # %%
+# print(cnb_corr_gt1_scaled_grid.best_params_)
+#
+# # %%
+# cnb_corr_gt1_scaled = ComplementNB(**cnb_corr_gt1_scaled_grid.best_params_)
+# cnb_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
+#
+# # %%
+# print(classification_report(y_corr_gt1_scaled_test, cnb_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
+#
+# # %%
+# benchmarkAndUpdateResult(
+#         df_known_attacks,
+#         cnb_corr_gt1_scaled,
+#         f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
+#         "Known attacks",
+#         "|correlation| > 0.1 features scaled",
+#         pipeline_corr_gt1_scaled,
+#         scaler=scaler_minmax_gt1,
+#         cols=cols_corr_gt1
+#         )
+#
+# # %%
+# benchmarkAndUpdateResult(
+#         df_similar_attacks,
+#         cnb_corr_gt1_scaled,
+#         f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
+#         "Similar attacks",
+#         "|correlation| > 0.1 features scaled",
+#         pipeline_corr_gt1_scaled,
+#         scaler=scaler_minmax_gt1,
+#         cols=cols_corr_gt1
+#         )
+#
+# # %%
+# benchmarkAndUpdateResult(
+#         df_new_attacks,
+#         cnb_corr_gt1_scaled,
+#         f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
+#         "New attacks",
+#         "|correlation| > 0.1 features scaled",
+#         pipeline_corr_gt1_scaled,
+#         scaler=scaler_minmax_gt1,
+#         cols=cols_corr_gt1
+#         )
+#
 # %% [markdown]
 # ## Gaussian Naive Bayes
 
 # %%
 gnb_params = {'var_smoothing': np.logspace(0,-9, num=100)}
-
-# %%
-verbose = 3
-cv = 3
-n_jobs = None
 
 # %% [markdown]
 # ### All features scaled

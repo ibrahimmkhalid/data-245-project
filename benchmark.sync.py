@@ -1,12 +1,3 @@
-try:
-    from google.colab import drive
-
-    drive.mount("/content/drive")
-    IN_COLAB = True
-except:
-    IN_COLAB = False
-
-# %%
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -21,6 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 import time
+from benchmarkUtils import Benchmark
 
 # %%
 pd.set_option("display.width", 10000)
@@ -30,64 +22,8 @@ pd.set_option("display.max_colwidth", None)
 
 TESTING = True
 TESTING_SIZE = 0.01
-BENCMARK_ITER_N = 10
 random_state = 245
-
-benchmark_results = pd.DataFrame(
-    columns=[
-        "Model",
-        "Dataset",
-        "Info",
-        "Data size",
-        "Accuracy",
-        "Precision",
-        "Recall",
-        "F1",
-        "Time per data per iter",
-    ]
-)
-
-
-def benchmarkAndUpdateResult(df, model, model_name, dataset_name, info, pipeline_fn, **pipeline_kwargs):
-    global benchmark_results
-    df_ = pipeline_fn(df=df, **pipeline_kwargs)
-    X = df_[df_.columns[:-1]]
-    y = df_[df_.columns[-1]]
-    data_size = np.shape(X)[0]
-    y_pred = model.predict(X)
-    accuracy = accuracy_score(y, y_pred)
-    precision = precision_score(y, y_pred)
-    recall = recall_score(y, y_pred)
-    f1 = f1_score(y, y_pred)
-    iter_n = BENCMARK_ITER_N
-    start = time.perf_counter_ns()
-    for _ in range(iter_n):  # benchmark
-        df_ = pipeline_fn(df=df, **pipeline_kwargs)
-        X = df_[df_.columns[:-1]]
-        model.predict(X)
-    end = time.perf_counter_ns()
-    time_per_data_per_iter = (end - start) / data_size / iter_n
-    benchmark_results.loc[len(benchmark_results)] = [
-        model_name,
-        dataset_name,
-        info,
-        data_size,
-        accuracy,
-        precision,
-        recall,
-        f1,
-        time_per_data_per_iter,
-    ]
-    print(classification_report(y, y_pred))
-    print()
-    print(f"Model: {model_name}")
-    print(f"Data size: {data_size}")
-    print(f"Accuracy: {accuracy}")
-    print(f"Precision: {precision}")
-    print(f"Recall: {recall}")
-    print(f"F1: {f1}")
-    print(f"Time per data per iter: {time_per_data_per_iter}")
-
+benchmark_util = Benchmark(iter_n=10)
 
 # %%
 def test_train_val_split(df, random_state=random_state):
@@ -101,12 +37,13 @@ def test_train_val_split(df, random_state=random_state):
 
 
 # %%
-if IN_COLAB:
-    prepend_path = (
-        "/content/drive/MyDrive/Syncable/sjsu/data-245/DATA 245 Project Files/data"
-    )
-else:
-    prepend_path = "./data"
+# if IN_COLAB:
+#     prepend_path = (
+#         "/content/drive/MyDrive/Syncable/sjsu/data-245/DATA 245 Project Files/data"
+#     )
+# else:
+#     prepend_path = "./data"
+prepend_path = "./data"
 known_attacks_path = f"{prepend_path}/probe_known_attacks_small.csv"
 similar_attacks_path = f"{prepend_path}/probe_similar_attacks_small.csv"
 new_attacks_path = f"{prepend_path}/probe_new_attacks_small.csv"
@@ -403,7 +340,7 @@ svm_scaled.fit(X_scaled_train, y_scaled_train)
 print(classification_report(y_scaled_test, svm_scaled.predict(X_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         svm_scaled,
         f"SVM {svm_scaled_grid.best_params_}",
@@ -414,7 +351,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         svm_scaled,
         f"SVM {svm_scaled_grid.best_params_}",
@@ -424,7 +361,7 @@ benchmarkAndUpdateResult(
         scaler=scaler_standard
         )
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         svm_scaled,
         f"SVM {svm_scaled_grid.best_params_}",
@@ -473,7 +410,7 @@ svm_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 print(classification_report(y_corr_gt1_scaled_test, svm_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         svm_corr_gt1_scaled,
         f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
@@ -485,7 +422,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         svm_corr_gt1_scaled,
         f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
@@ -496,7 +433,7 @@ benchmarkAndUpdateResult(
         cols=cols_corr_gt1
         )
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         svm_corr_gt1_scaled,
         f"SVM {svm_corr_gt1_scaled_grid.best_params_}",
@@ -546,7 +483,7 @@ svm_pca.fit(X_pca_train, y_pca_train)
 print(classification_report(y_pca_test, svm_pca.predict(X_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         svm_pca,
         f"SVM {svm_pca_grid.best_params_}",
@@ -558,7 +495,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         svm_pca,
         f"SVM {svm_pca_grid.best_params_}",
@@ -569,7 +506,7 @@ benchmarkAndUpdateResult(
         pca=pca_standard
         )
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         svm_pca,
         f"SVM {svm_pca_grid.best_params_}",
@@ -619,7 +556,7 @@ svm_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 print(classification_report(y_corr_gt1_pca_test, svm_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         svm_corr_gt1_pca,
         f"SVM {svm_corr_gt1_pca_grid.best_params_}",
@@ -632,7 +569,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         svm_corr_gt1_pca,
         f"SVM {svm_corr_gt1_pca_grid.best_params_}",
@@ -644,7 +581,7 @@ benchmarkAndUpdateResult(
         pca=pca_corr_gt1_standard
         )
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         svm_corr_gt1_pca,
         f"SVM {svm_corr_gt1_pca_grid.best_params_}",
@@ -707,7 +644,7 @@ benchmarkAndUpdateResult(
 # print(classification_report(y_scaled_test, cnb_scaled.predict(X_scaled_test)))
 #
 # # %%
-# benchmarkAndUpdateResult(
+# benchmark_util.benchmarkAndUpdateResult(
 #         df_known_attacks,
 #         cnb_scaled,
 #         f"ComplementNB {cnb_scaled_grid.best_params_}",
@@ -718,7 +655,7 @@ benchmarkAndUpdateResult(
 #         )
 #
 # # %%
-# benchmarkAndUpdateResult(
+# benchmark_util.benchmarkAndUpdateResult(
 #         df_similar_attacks,
 #         cnb_scaled,
 #         f"ComplementNB {cnb_scaled_grid.best_params_}",
@@ -729,7 +666,7 @@ benchmarkAndUpdateResult(
 #         )
 #
 # # %%
-# benchmarkAndUpdateResult(
+# benchmark_util.benchmarkAndUpdateResult(
 #         df_new_attacks,
 #         cnb_scaled,
 #         f"ComplementNB {cnb_scaled_grid.best_params_}",
@@ -778,7 +715,7 @@ benchmarkAndUpdateResult(
 # print(classification_report(y_corr_gt1_scaled_test, cnb_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 #
 # # %%
-# benchmarkAndUpdateResult(
+# benchmark_util.benchmarkAndUpdateResult(
 #         df_known_attacks,
 #         cnb_corr_gt1_scaled,
 #         f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
@@ -790,7 +727,7 @@ benchmarkAndUpdateResult(
 #         )
 #
 # # %%
-# benchmarkAndUpdateResult(
+# benchmark_util.benchmarkAndUpdateResult(
 #         df_similar_attacks,
 #         cnb_corr_gt1_scaled,
 #         f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
@@ -802,7 +739,7 @@ benchmarkAndUpdateResult(
 #         )
 #
 # # %%
-# benchmarkAndUpdateResult(
+# benchmark_util.benchmarkAndUpdateResult(
 #         df_new_attacks,
 #         cnb_corr_gt1_scaled,
 #         f"ComplementNB {cnb_corr_gt1_scaled_grid.best_params_}",
@@ -858,7 +795,7 @@ gnb_scaled.fit(X_scaled_train, y_scaled_train)
 print(classification_report(y_scaled_test, gnb_scaled.predict(X_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         gnb_scaled,
         f"GaussianNB {gnb_scaled_grid.best_params_}",
@@ -869,7 +806,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         gnb_scaled,
         f"GaussianNB {gnb_scaled_grid.best_params_}",
@@ -880,7 +817,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         gnb_scaled,
         f"GaussianNB {gnb_scaled_grid.best_params_}",
@@ -929,7 +866,7 @@ gnb_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 print(classification_report(y_corr_gt1_scaled_test, gnb_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         gnb_corr_gt1_scaled,
         f"GaussianNB {gnb_corr_gt1_scaled_grid.best_params_}",
@@ -941,7 +878,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         gnb_corr_gt1_scaled,
         f"GaussianNB {gnb_corr_gt1_scaled_grid.best_params_}",
@@ -953,7 +890,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         gnb_corr_gt1_scaled,
         f"GaussianNB {gnb_corr_gt1_scaled_grid.best_params_}",
@@ -1003,7 +940,7 @@ gnb_pca.fit(X_pca_train, y_pca_train)
 print(classification_report(y_pca_test, gnb_pca.predict(X_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         gnb_pca,
         f"GaussianNB {gnb_pca_grid.best_params_}",
@@ -1015,7 +952,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         gnb_pca,
         f"GaussianNB {gnb_pca_grid.best_params_}",
@@ -1027,7 +964,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         gnb_pca,
         f"GaussianNB {gnb_pca_grid.best_params_}",
@@ -1077,7 +1014,7 @@ gnb_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 print(classification_report(y_corr_gt1_pca_test, gnb_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         gnb_corr_gt1_pca,
         f"GaussianNB {gnb_corr_gt1_pca_grid.best_params_}",
@@ -1090,7 +1027,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         gnb_corr_gt1_pca,
         f"GaussianNB {gnb_corr_gt1_pca_grid.best_params_}",
@@ -1103,7 +1040,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         gnb_corr_gt1_pca,
         f"GaussianNB {gnb_corr_gt1_pca_grid.best_params_}",
@@ -1116,7 +1053,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ## Logistic Regression
@@ -1167,7 +1104,7 @@ log_scaled.fit(X_scaled_train, y_scaled_train)
 print(classification_report(y_scaled_test, log_scaled.predict(X_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         log_scaled,
         f"Logistic Regression {log_scaled_grid.best_params_}",
@@ -1178,7 +1115,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         log_scaled,
         f"Logistic Regression {log_scaled_grid.best_params_}",
@@ -1189,7 +1126,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         log_scaled,
         f"Logistic Regression {log_scaled_grid.best_params_}",
@@ -1200,7 +1137,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### Features with |correlation| > 0.1 scaled
@@ -1241,7 +1178,7 @@ log_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 print(classification_report(y_corr_gt1_scaled_test, log_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         log_corr_gt1_scaled,
         f"Logistic Regression {log_corr_gt1_scaled_grid.best_params_}",
@@ -1253,7 +1190,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         log_corr_gt1_scaled,
         f"Logistic Regression {log_corr_gt1_scaled_grid.best_params_}",
@@ -1265,7 +1202,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         log_corr_gt1_scaled,
         f"Logistic Regression{log_corr_gt1_scaled_grid.best_params_}",
@@ -1277,7 +1214,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### All features with 95% PCA
@@ -1318,7 +1255,7 @@ log_pca.fit(X_pca_train, y_pca_train)
 print(classification_report(y_pca_test, log_pca.predict(X_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         log_pca,
         f"Logistic Regression {log_pca_grid.best_params_}",
@@ -1330,7 +1267,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         log_pca,
         f"Logistic Regressiion {log_pca_grid.best_params_}",
@@ -1342,7 +1279,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         log_pca,
         f"Logistic Regression {log_pca_grid.best_params_}",
@@ -1354,7 +1291,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### Features with |correlation| > 0.1 with 95% PCA
@@ -1395,7 +1332,7 @@ log_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 print(classification_report(y_corr_gt1_pca_test, log_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         log_corr_gt1_pca,
         f"Logisitc Regression {log_corr_gt1_pca_grid.best_params_}",
@@ -1408,7 +1345,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         log_corr_gt1_pca,
         f"Logistic Regression {log_corr_gt1_pca_grid.best_params_}",
@@ -1421,7 +1358,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         log_corr_gt1_pca,
         f"Logistic Regression {log_corr_gt1_pca_grid.best_params_}",
@@ -1434,7 +1371,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 # %% [markdown]
 # ## XGBoost
 
@@ -1486,7 +1423,7 @@ xgb_scaled.fit(X_scaled_train, y_scaled_train)
 print(classification_report(y_scaled_test, xgb_scaled.predict(X_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         xgb_scaled,
         f"XGBClassifier {xgb_scaled_grid.best_params_}",
@@ -1497,7 +1434,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         xgb_scaled,
         f"XGBClassifier {xgb_scaled_grid.best_params_}",
@@ -1508,7 +1445,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         xgb_scaled,
         f"XGBClassifier {xgb_scaled_grid.best_params_}",
@@ -1519,7 +1456,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### Features with |correlation| > 0.1 scaled
@@ -1560,7 +1497,7 @@ xgb_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 print(classification_report(y_corr_gt1_scaled_test, xgb_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         xgb_corr_gt1_scaled,
         f"XGBClassifier {xgb_corr_gt1_scaled_grid.best_params_}",
@@ -1572,7 +1509,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         xgb_corr_gt1_scaled,
         f"XGBClassifier {xgb_corr_gt1_scaled_grid.best_params_}",
@@ -1584,7 +1521,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         xgb_corr_gt1_scaled,
         f"XGBClassifier {xgb_corr_gt1_scaled_grid.best_params_}",
@@ -1596,7 +1533,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### All features with 95% PCA
@@ -1637,7 +1574,7 @@ xgb_pca.fit(X_pca_train, y_pca_train)
 print(classification_report(y_pca_test, xgb_pca.predict(X_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         xgb_pca,
         f"XGBClassifier {xgb_pca_grid.best_params_}",
@@ -1649,7 +1586,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         xgb_pca,
         f"XGBClassifier {xgb_pca_grid.best_params_}",
@@ -1661,7 +1598,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         xgb_pca,
         f"XGBClassifier {xgb_pca_grid.best_params_}",
@@ -1673,7 +1610,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### Features with |correlation| > 0.1 with 95% PCA
@@ -1714,7 +1651,7 @@ xgb_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 print(classification_report(y_corr_gt1_pca_test, xgb_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         xgb_corr_gt1_pca,
         f"XGBClassifier {xgb_corr_gt1_pca_grid.best_params_}",
@@ -1727,7 +1664,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         xgb_corr_gt1_pca,
         f"XGBClassifier {xgb_corr_gt1_pca_grid.best_params_}",
@@ -1740,7 +1677,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         xgb_corr_gt1_pca,
         f"XGBClassifier {xgb_corr_gt1_pca_grid.best_params_}",
@@ -1753,7 +1690,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ## Random Forest
@@ -1807,7 +1744,7 @@ RF_scaled.fit(X_scaled_train, y_scaled_train)
 print(classification_report(y_scaled_test, RF_scaled.predict(X_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         RF_scaled,
         f"Random Forest {RF_scaled_grid.best_params_}",
@@ -1818,7 +1755,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         RF_scaled,
         f"Random Forest {RF_scaled_grid.best_params_}",
@@ -1829,7 +1766,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         RF_scaled,
         f"Random Forest {RF_scaled_grid.best_params_}",
@@ -1840,7 +1777,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### Features with |correlation| > 0.1 scaled
@@ -1881,7 +1818,7 @@ RF_corr_gt1_scaled.fit(X_corr_gt1_scaled_train, y_corr_gt1_scaled_train)
 print(classification_report(y_corr_gt1_scaled_test, RF_corr_gt1_scaled.predict(X_corr_gt1_scaled_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         RF_corr_gt1_scaled,
         f"Random Forest {RF_corr_gt1_scaled_grid.best_params_}",
@@ -1893,7 +1830,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         RF_corr_gt1_scaled,
         f"Random Forest {RF_corr_gt1_scaled_grid.best_params_}",
@@ -1905,7 +1842,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         RF_corr_gt1_scaled,
         f"Random Forest {RF_corr_gt1_scaled_grid.best_params_}",
@@ -1917,7 +1854,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### All features with 95% PCA
@@ -1958,7 +1895,7 @@ RF_pca.fit(X_pca_train, y_pca_train)
 print(classification_report(y_pca_test, RF_pca.predict(X_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         RF_pca,
         f"Random Forest {RF_pca_grid.best_params_}",
@@ -1970,7 +1907,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         RF_pca,
         f"Random Forest {RF_pca_grid.best_params_}",
@@ -1982,7 +1919,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         RF_pca,
         f"Random Forest {RF_pca_grid.best_params_}",
@@ -1994,7 +1931,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %% [markdown]
 # ### Features with |correlation| > 0.1 with 95% PCA
@@ -2035,7 +1972,7 @@ RF_corr_gt1_pca.fit(X_corr_gt1_pca_train, y_corr_gt1_pca_train)
 print(classification_report(y_corr_gt1_pca_test, RF_corr_gt1_pca.predict(X_corr_gt1_pca_test)))
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_known_attacks,
         RF_corr_gt1_pca,
         f"Random Forest {RF_corr_gt1_pca_grid.best_params_}",
@@ -2048,7 +1985,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_similar_attacks,
         RF_corr_gt1_pca,
         f"Random Forest {RF_corr_gt1_pca_grid.best_params_}",
@@ -2061,7 +1998,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmarkAndUpdateResult(
+benchmark_util.benchmarkAndUpdateResult(
         df_new_attacks,
         RF_corr_gt1_pca,
         f"Random Forest {RF_corr_gt1_pca_grid.best_params_}",
@@ -2074,7 +2011,7 @@ benchmarkAndUpdateResult(
         )
 
 # %%
-benchmark_results
+benchmark_util.display()
 
 # %%
-benchmark_results.to_csv("benchmark_results.csv", index=False)
+benchmark_util.to_csv("benchmark_results.csv")

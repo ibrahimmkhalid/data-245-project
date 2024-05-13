@@ -1,12 +1,18 @@
 import time
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report,
+)
 
 
 class Benchmark:
     def __init__(self, iter_n=10):
-        self.__ITER__ = iter_n 
+        self.__ITER__ = iter_n
         self.benchmark_results = self.make_df()
 
     def make_df(self):
@@ -24,16 +30,41 @@ class Benchmark:
             ]
         )
         return benchmark_results
-        
-    def display(self, sort_by=None):
+
+    def import_df(self, path):
+        self.benchmark_results = pd.read_csv(path)
+
+    def display(
+        self,
+        model=None,
+        dataset=None,
+        sort_by=None,
+        ascending=False,
+        top=None,
+        show_model_params=True,
+        reset_index=True,
+    ):
+        tmp = self.benchmark_results.copy()
+        if model:
+            tmp = tmp[tmp["Model"].str.contains(model)]
+        if dataset:
+            tmp = tmp[tmp["Dataset"].str.contains(dataset)]
         if sort_by:
-            return self.benchmark_results.sort_values(by=sort_by)
-        return self.benchmark_results
+            tmp = tmp.sort_values(by=sort_by, ascending=ascending)
+        if not show_model_params:
+            tmp["Model"] = tmp["Model"].str.replace(r" {.*}", "", regex=True)
+        if top:
+            tmp = tmp.head(top)
+        if reset_index:
+            tmp = tmp.reset_index(drop=True)
+        return tmp
 
     def to_csv(self, path):
         self.benchmark_results.to_csv(path, index=False)
 
-    def benchmarkAndUpdateResult(self, df, model, model_name, dataset_name, info, pipeline_fn, **pipeline_kwargs):
+    def benchmarkAndUpdateResult(
+        self, df, model, model_name, dataset_name, info, pipeline_fn, **pipeline_kwargs
+    ):
         df_ = pipeline_fn(df=df, **pipeline_kwargs)
         X = df_[df_.columns[:-1]]
         y = df_[df_.columns[-1]]

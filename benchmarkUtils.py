@@ -49,7 +49,7 @@ class Benchmark:
             X = df_[df_.columns[:-1]]
             model.predict(X)
         end = time.perf_counter_ns()
-        time_per_data_per_iter = (end - start) / data_size / self.__ITER__
+        time_per_data_per_iter = (end - start) / self.__ITER__ / 1000000
         self.benchmark_results.loc[len(self.benchmark_results)] = [
             model_name,
             dataset_name,

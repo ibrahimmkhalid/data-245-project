@@ -43,7 +43,7 @@ class Benchmark:
         top=None,
         show_model_params=True,
         reset_index=True,
-    ):
+    ) -> pd.DataFrame:
         tmp = self.benchmark_results.copy()
         if model:
             tmp = tmp[tmp["Model"].str.contains(model)]

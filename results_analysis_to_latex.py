@@ -32,12 +32,14 @@ for model in df["Model"].unique():
         "float_format":"{:.3f}".format,
         "multirow":True,
         "multicolumn":True,
-        "position":"!htb"
+        "position":"!htb",
+        "caption":caption,
+        "label":label
     }
     latex = tmp.to_latex(**latex_args)
     latex = latex.replace("\\$", "$")
-    latex = latex.replace("\\end{tabular}", "\\end{tabular}\n}\n\\caption{"+caption+"}\n\\label{"+label+"}")
     latex = latex.replace("\\begin{tabular}", "\\centering\n\\resizebox{\\linewidth}{!}{\\begin{tabular}")
+    latex = latex.replace("\\end{tabular}", "\\end{tabular}\n}")
     latex = latex.replace("\\multirow[t]", "\\multirow[c]")
     with open(f"{partial_tables}/{label}.tex", "w") as f:
         f.write(latex)
@@ -62,11 +64,12 @@ for model in df_params["Model"].unique():
         "index":True,
         "escape":True,
         "float_format":"{:.2f}".format,
-        "position":"!htb"
+        "position":"!htb",
+        "caption":caption,
+        "label":label
     }
     latex = tmp.to_latex(**latex_args)
     latex = latex.replace("\\$", "$")
-    latex = latex.replace("\\end{tabular}", "\\end{tabular}\n\\caption{"+caption+"}\n\\label{"+label+"}")
     latex = latex.replace("\\begin{tabular}", "\\centering\n\\begin{tabular}")
 
     with open(f"{partial_tables}/{label}.tex", "w") as f:
@@ -90,11 +93,12 @@ for col in df.columns[3:]:
             "index":False,
             "escape":True,
             "float_format":"{:.3f}".format,
-            "position":"!htb"
+            "position":"!htb",
+            "caption":caption,
+            "label":label
         }
         latex = tmp.head().to_latex(**latex_args)
         latex = latex.replace("\\$", "$")
-        latex = latex.replace("\\end{tabular}", "\\end{tabular}\n\\caption{"+caption+"}\n\\label{"+label+"}")
         latex = latex.replace("\\begin{tabular}", "\\centering\n\\begin{tabular}")
         with open(f"{partial_tables}/{label}.tex", "w") as f:
             f.write(latex)

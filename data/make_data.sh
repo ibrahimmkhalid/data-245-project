@@ -27,3 +27,4 @@ cat probe_new_attacks.csv | grep -C $context "attack" --no-group-separator >> pr
 rm probe_known_attacks.csv
 rm probe_similar_attacks.csv
 rm probe_new_attacks.csv
+rm header.csv

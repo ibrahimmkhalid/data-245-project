@@ -1,12 +1,8 @@
-data/**
+data/*.arff
 !data/make_data.sh
 !data/download_data.sh
-!data/download.py
-!data/combined.csv
-!/data/merge_datasets.py
 .ipynb_checkpoints
 .nvim.lua
 .project_env
 .todo
-probe_known_attacks.arff
 __pycache__

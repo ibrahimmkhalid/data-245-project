@@ -18,6 +18,7 @@ Files:
 - `./requirements.txt` - Minimal set of requirements to set up environment
 - `./report/` - Latex source code for report
 - `./presentation/` - Mid and final project presentation
+- `./report.pdf` - Report output as of `report` submodule commit hash 4fa5f16 
 
 
 ---

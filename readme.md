@@ -10,8 +10,15 @@ Files:
 - `./data/download_data.sh` and `./data/make_data.sh` - Download [dataset](https://secplab.ppgia.pucpr.br/?q=trabid) and convert to small csv
 - `./data/*.csv` - The actual datasets used in training and evaluation
 - `./exploring.ipynb` - Perform EDA on dataset
-- `./model_*.ipynb` - Testing notebook for the given model
-- `./report` - Latex source code for report
+- `./model_*.ipynb` - Testing notebook for the given model (also save ROC curves to `./report/figures/`)
+- `./benchmark.ipynb` - perform benchmark on all models and save results to `./benchmark_results.csv`
+- `./benchmarkUtils.py` - common class for performing benchmarks in all notebooks
+- `./results_analysis.ipynb` - Display results from `./benchmark_results.csv` in a neatly readable format
+- `./results_analysis_to_latex.py` - Python script to generate tables in `./report/partial-tables/`
+- `./requirements.txt` - Minimal set of requirements to set up environment
+- `./report/` - Latex source code for report
+- `./presentation/` - Mid and final project presentation
+
 
 ---
 
